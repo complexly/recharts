@@ -6,7 +6,7 @@ AlwaysSaveHistory: Default
 
 EnableCodeIndexing: Yes
 UseSpacesForTab: Yes
-NumSpacesForTab: 2
+NumSpacesForTab: 4
 Encoding: UTF-8
 
 RnwWeave: knitr
@@ -16,6 +16,8 @@ AutoAppendNewline: Yes
 StripTrailingWhitespace: Yes
 
 BuildType: Package
+PackageUseDevtools: Yes
 PackageInstallArgs: --with-keep.source
 PackageBuildArgs: -v && Rscript -e "Rd2roxygen::rab(install=TRUE)"
 PackageCheckArgs: --as-cran
+PackageRoxygenize: rd,collate,namespace,vignette

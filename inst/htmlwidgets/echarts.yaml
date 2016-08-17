@@ -1,5 +1,49 @@
 dependencies:
   - name: echarts
-    version: 2.2.3
-    src: htmlwidgets/lib/echarts
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts"
     script: echarts-all.js
+  - name: blue
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts/themes"
+    script: blue.js
+  - name: dark
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts/themes"
+    script: dark.js
+  - name: gray
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts/themes"
+    script: gray.js
+  - name: green
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts/themes"
+    script: green.js
+  - name: helianthus
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts/themes"
+    script: helianthus.js
+  - name: macarons2
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts/themes"
+    script: macarons2.js
+  - name: mint
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts/themes"
+    script: mint.js
+  - name: red
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts/themes"
+    script: red.js
+  - name: roma
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts/themes"
+    script: roma.js
+  - name: sakura
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts/themes"
+    script: sakura.js
+  - name: shine
+    version: 2.2.7
+    src: "htmlwidgets/lib/echarts/themes"
+    script: shine.js
