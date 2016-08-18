@@ -1,6 +1,8 @@
 #' @importFrom data.table melt
 series_scatter <- function(lst, type, return=NULL, ...){
+    # g = echartr(mtcars, wt, mpg, am)
     lst <- mergeList(list(weight=NULL, series=NULL), lst)
+    if (!is.numeric(lst$x[,1])) stop('x and y must be numeric')
     data <- cbind(lst$y[,1], lst$x[,1])
 
     if (!is.null(lst$weight)){  # weight as symbolSize
@@ -11,7 +13,7 @@ series_scatter <- function(lst, type, return=NULL, ...){
         folds <- maxWeight / minWeight
         if (abs(folds) < 50){  # max/min < 50, linear
             jsSymbolSize <- JS(paste0('function (value){
-                return ', ifelse(abs(folds) < 5, 4, ifelse(abs(folds) < 10, 2, 1)),
+                return ', switch(ceiling(abs(folds)/10), 6,5,4,3,2),
                 '*Math.round(Math.abs(value[2]/', minWeight,'));
                 }'))
         }else{  # max/min >= 50, normalize
@@ -21,12 +23,11 @@ series_scatter <- function(lst, type, return=NULL, ...){
         }
     }
     obj <- list()
-    data[is.na(data)] <- '-'
     if (is.null(lst$series)) {  # no series
         if (is.null(lst$weight))
-            obj <- list(list(type=type$type[1], data=data[,2:1]))
+            obj <- list(list(type=type$type[1], data=asEchartData(data[,2:1])))
         else
-            obj <- list(list(type=type$type[1], data=data[,c(2:1,3)],
+            obj <- list(list(type=type$type[1], data=asEchartData(data[,c(2:1,3)]),
                              symbolSize=jsSymbolSize))
     }else{  # series-specific
         data <- cbind(data, lst$series[,1])
@@ -34,14 +35,13 @@ series_scatter <- function(lst, type, return=NULL, ...){
         if (is.null(lst$weight)){
             obj <- lapply(seq_along(data), function(i){
                 list(name = names(data)[i], type = type$type[i],
-                     data = unname(as.matrix(data[[i]])[,2:1]),
-                     large = nrow(data) > 2000) ## > 2000 points, large = TRUE
+                     data = asEchartData(data[[i]][,2:1]))
             })  ## only fetch col 1-2 of data, col 3 is series
         }else{
             obj <- lapply(seq_along(data), function(i){
                 list(name = names(data)[i], type = type$type[i],
-                     data = unname(as.matrix(data[[i]])[,c(2:1, 3)]),
-                     symbolSize=jsSymbolSize, large = nrow(data) > 2000)
+                     data = asEchartData(data[[i]][,c(2:1, 3)]),
+                     symbolSize=jsSymbolSize)
             })  ## fetch col 1-2 and 3 (x, y, weight)
         }
     }
@@ -55,8 +55,9 @@ series_scatter <- function(lst, type, return=NULL, ...){
 
 series_bar <- function(lst, type, return=NULL, ...){
     # example:
-    # echartr(mtcars, hp, mpg, series=factor(am,labels=c('Manual','Automatic')),
-    #               type=c('hbar','scatter'))
+    # echartr(mtcars, row.names(mtcars), mpg,
+    #     series=factor(am,labels=c('Manual','Automatic')),
+    #     type=c('hbar','scatter'))
     lst <- mergeList(list(series=NULL), lst)
     data <- cbind(lst$y[,1], lst$x[,1])
 
@@ -64,36 +65,37 @@ series_bar <- function(lst, type, return=NULL, ...){
         if (grepl('hist', type$misc)){  # histogram
             hist <- hist(data[,1], plot=FALSE)
             if (grepl('density', type$misc)){
-                data <- unname(as.matrix(cbind(hist$mids, hist$density)))
+                data <- as.matrix(cbind(hist$density, hist$mids))  # y, x
             }else{
-                data <- unname(as.matrix(cbind(hist$mids, hist$counts)))
+                data <- as.matrix(cbind(hist$counts, hist$mids))  # y, x
             }
         }else{ # simply run freq of x
             if (is.numeric(data[,1])){
-                data <- unname(as.matrix(as.data.frame(table(data[,1]))))
+                data <- as.matrix(as.data.frame(table(data[,1])))
             }else{
-                data <- unname(as.matrix(table(data[,1])))
+                data <- as.matrix(table(data[,1]))
             }
         }
     }
 
     obj <- list()
-    data[is.na(data)] = '-'  # NA in Echarts is hyphan
     if (is.null(lst$series)) {  # no series
         if (is.numeric(lst$x[,1])){
-            obj <- list(list(type=type$type[1], data=data[,2:1]))
+            obj <- list(list(type=type$type[1], data=asEchartData(data[,2:1])))
             if (any(grepl("flip", type$misc))) obj[[1]]$barHeight=10
             if (grepl('hist',type$misc)) {
                 obj[[1]]$barGap = '1%'
-                obj[[1]]$barWidth = (dev.size('px')[1]-200) / length(hist$breaks)
-                obj[[1]]$barMaxWidth = 824 / length(hist$breaks)
+                obj[[1]]$barWidth = floor((dev.size('px')[1]-200) / length(hist$breaks))
+                obj[[1]]$barMaxWidth = floor(820 / length(hist$breaks))
             }
         }else{
-            obj <- list(list(type=type$type[1], data=data[,1]))
+            obj <- list(list(type=type$type[1], data=asEchartData(data[,1])))
         }
     }else{  # series-specific
-        dataCross <- tapply(data[,1], list(data[,2], lst$series[,1]),
-                            function(x) x)
+        dataCross <- tapply(data[,1], list(data[,2], lst$series[,1]), function(x) {
+            if (length(x) == 1) return(x)
+            stop('y must only have one value corresponding to each combination of x and series')
+        })
         idx <- match(unique(data[,2]),rownames(dataCross))
         dataCross <- dataCross[idx,]
         #rownames(dataCross) <- data[,2]
@@ -102,13 +104,13 @@ series_bar <- function(lst, type, return=NULL, ...){
         obj <- lapply(seq_len(ncol(data)), function(i){
             if (is.numeric(lst$x[,1])){
                 o = list(name = colnames(data)[i], type = type$type[i],
-                         data = unname(cbind(as.numeric(rownames(data)),
+                         data = asEchartData(cbind(as.numeric(rownames(data)),
                                                         data[,i])))
                 if (any(grepl("flip", type$misc)))
                     o <- mergeList(o, list(barHeight=10))
             }else{
                 o = list(name = colnames(data)[i], type = type$type[i],
-                         data = unname(data[,i]))
+                         data = asEchartData(data[,i]))
             }
             if (type$stack[i]) o[['stack']] = 'Group'
             return(o)
@@ -139,8 +141,7 @@ series_line = function(lst, type, return=NULL, ...) {
         obj = series_scatter(lst, type = type)
     }else{
         if (is.null(lst$series[,1])) {
-            lst$y[,1][is.na(lst$y[,1])] <- '-'
-            obj = list(list(type = 'line', data = lst$y[,1]))
+            obj = list(list(type = 'line', data = asEchartData(lst$y[,1])))
         }
     }
     if (length(obj) == 0) obj = series_bar(lst, type = type)
@@ -169,6 +170,18 @@ series_line = function(lst, type, return=NULL, ...) {
 
 }
 
+series_k <- function(lst, type, return=NULL, ...){
+    # g=echartr(stock, date, c(open, close, low, high), type='k')
+    if (is.null(lst$y) || ncol(lst$y) < 4)
+        stop('y must contain four columns: open, close, low, high.')
+    data <- cbind(lst$y[,1:4], lst$x[,1])
+    obj <- list(list(name='Stock', type=type$type[1], data=asEchartData(lst$y[,1:4])))
+    if (is.null(return)){
+        return(obj)
+    }else{
+        return(obj[intersect(names(obj), return)])
+    }
+}
 
 #---------------------------legacy functions-----------------------------------
 # split the data matrix for a scatterplot by series
