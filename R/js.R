@@ -144,29 +144,30 @@ convFormat2JS <- function(fmt, type=c("value", "category", "time")){
                            "x.getMonth() + '/' + x.getDate();}"))
         if (is.null(js)){
             js = fmt
-            js = gsub("%[Aa]", "weekNames[x.getDay()] + ", js)
-            js = gsub("%[Bbh]", "monthNames[x.getMonth()] + ", js)
-            js = gsub("%C", "floor(x.getFullYear() / 100) + ", js)
-            js = gsub("%de", "x.getDate() + ", js)
-            js = gsub("%[gy]", "x.getYear() + ", js)
-            js = gsub("%[GY]", "x.getFullYear() + ", js)
-            js = gsub("%H", "x.getHours() + ", js)
-            js = gsub("%I", paste0("x.getHours()>12 ? x.getHours()-12 : ",
+            js = gsub("%[Aa]", "' + weekNames[x.getDay()] + '", js)
+            js = gsub("%[Bbh]", "' + monthNames[x.getMonth()] + '", js)
+            js = gsub("%C", "' + floor(x.getFullYear() / 100) + '", js)
+            js = gsub("%[de]", "' + x.getDate() + '", js)
+            js = gsub("%[gy]", "' + x.getYear() + '", js)
+            js = gsub("%[GY]", "' + x.getFullYear() + '", js)
+            js = gsub("%H", "' + x.getHours() + '", js)
+            js = gsub("%I", paste0("' + x.getHours()>12 ? x.getHours()-12 : '",
                                    "x.getHours() + "), js)
-            js = gsub("%M", "x.getMinutes() + ", js)
-            js = gsub("%m", "x.getMonth() + ", js)
-            js = gsub("%p", "x.getHours()>12 ? 'PM' : 'AM' + ", js)
-            js = gsub("%S", "x.getSeconds() + ", js)
-            js = gsub("%u", "weekNames[x.getDay()] + ", js)
-            js = gsub("%w", "x.getDay() + ", js)
-            js = paste0("function(x) {
-                           var monthNames = ['January', 'February', 'March',
-                           'April', 'May', 'June', 'July', 'August', 'September',
-                           'October', 'November', 'December'];",
+            js = gsub("%M", "' + x.getMinutes() + '", js)
+            js = gsub("%m", "' + x.getMonth() + '", js)
+            js = gsub("%p", "' + x.getHours()>12 ? 'PM' : 'AM' + '", js)
+            js = gsub("%S", "' + x.getSeconds() + '", js)
+            js = gsub("%u", "' + weekNames[x.getDay()] + '", js)
+            js = gsub("%w", "' + x.getDay() + '", js)
+            js = paste0("function(x) {",
+                        "var monthNames = ['January', 'February', 'March',
+                        'April', 'May', 'June', 'July', 'August', 'September',
+                        'October', 'November', 'December'];",
                         "var weekNames = ['Monday', 'Tuesday', 'Wednesday',
-                           'Thursday', 'Friday', 'Saturday', 'Sunday'];",
-                        "return ", js)
-            js = gsub("^(.+) + $", "\\1;}")
+                        'Thursday', 'Friday', 'Saturday', 'Sunday'];",
+                        "return ", substr(js, 4, nchar(js)))
+            js = gsub("^(.+) \\+ ' *$", "\\1;\\}", js)
+            js = JS(gsub("\\+ '' \\+", "+", js))
         }
     }
     if (is.null(js)) {
