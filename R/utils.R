@@ -138,6 +138,25 @@ ifblank <- function(x, y)  if (length(x) == 0) return(y) else return(x)
 ifzero <- function(x, y)  if (x==0) return(y) else return(x)
 ifmissing <- function(x, y) if (missing(x)) return(y) else return(x)
 
+asEchartData <- function(x, na.string='-'){
+    # convert matrix/data.frame or vector to JSON-list lists
+    # and convert NA to '-'
+    if (!is.null(dim(x))){
+        o = apply(x, 1, function(row){
+            row = as.list(unname(row))
+            row = lapply(row, function(e) e = if (is.na(e)) na.string else e)
+            return(row)
+        })
+        # if (nrow(x) == 1 && ncol(x) > 1)
+        #     o = list(unname(o))
+    }else{
+        o = as.list(unname(x))
+        o = lapply(x, function(e) e = if (is.na(e)) na.string else e)
+    }
+
+    return(unname(o))
+}
+
 convTimestamp <- function(time, from='R', to='JS'){
     stopifnot(inherits(time, c("numeric", "Date", "POSIXct", "POSIXlt")))
     if (from=='R' && to=='JS')
