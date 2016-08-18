@@ -100,7 +100,10 @@ echartr = function(
                           c('x', 'y', 'z', 'series', 'weight', 'lat', 'lng'))
     vArgsRaw <- vArgs[dataVars]  # original arg names
     vArgs <- lapply(vArgsRaw, function(v) {
-        as.symbol(all.names(v)[length(all.names(v))])
+        symbols = all.names(v)
+        if (any(symbols %in% names(data)))
+            return(as.symbol(symbols[symbols %in% names(data)]))
+        v
     })  # get arg names correspond to data vars
 
     # ------------extract var names and values-----------------
