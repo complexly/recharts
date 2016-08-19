@@ -256,12 +256,12 @@ echartr = function(
 
 
     if (any(dfType$type %in% c('line', 'bar', 'scatter', 'k'))){
-        chart <- chart %>% setXAxis(name = xlab[[1]]) %>%
+        chart %>% setXAxis(name = xlab[[1]]) %>%
             setYAxis(name = ylab[[1]]) %>%
             setTooltip() %>% setToolbox() %>% setLegend() %>%
             flipAxis(flip=any(grepl("flip", dfType$misc)))
     }else{
-        chart <- chart %>% setTooltip() %>% setToolbox() %>% setLegend()
+        chart %>% setTooltip() %>% setToolbox() %>% setLegend()
     }
 }
 
