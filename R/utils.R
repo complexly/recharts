@@ -290,7 +290,7 @@ invertColor <- function(color, mode=c('bw', 'opposite', 'hue', 'saturation',
 
 #' Text Position and Direction
 #'
-#' Converts text postion from clock digits to c(x, y, direction) vector
+#' Converts text postion from clock digits to c(x, y, direction) vector, or vice versa.
 #' @param pos 1-12, clock digits.
 #'
 #' @return A vector of x-alignment, y-alignment and direction.
@@ -307,7 +307,7 @@ invertColor <- function(color, mode=c('bw', 'opposite', 'hue', 'saturation',
 #'  9(l, c, v) \tab \tab \tab \tab 3(r, c, v) \cr
 #'  8(l, b, v) \tab 7(l, b, h) \tab 6(c, b, h) \tab 5(r, b, h) \tab 4(r, b, v)
 #' }
-#'
+#' @rdname position.orient
 vecPos <- function(pos){
     TblPos=as.data.frame(rbind(c("right",  "top",    "horizontal"),
                                c("right",  "top",    "vertical"),
@@ -325,6 +325,38 @@ vecPos <- function(pos){
                          stringsAsFactors=FALSE)
     names(TblPos) <- c("x","y","z")
     return(as.vector(unlist(TblPos[pos,])))
+}
+
+
+#' @param x String, 'left', 'right' or 'center'
+#' @param y String, 'top', 'center' or 'vertical'
+#' @param orient String, 'horizontal' or 'vertical'
+#'
+#' @return A clock digit number
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' clockPos("right", "top", "vertical") ## returns 2
+#' }
+#' @rdname position.orient
+clockPos <- function(x, y, orient){
+    TblPos=as.data.frame(rbind(c("right",  "top",    "horizontal"),
+                               c("right",  "top",    "vertical"),
+                               c("right",  "center", "vertical"),
+                               c("right",  "bottom", "vertical"),
+                               c("right",  "bottom", "horizontal"),
+                               c("center", "bottom", "horizontal"),
+                               c("left",   "bottom", "horizontal"),
+                               c("left",   "bottom", "vertical"),
+                               c("left",   "center", "vertical"),
+                               c("left",   "top",    "vertical"),
+                               c("left",   "top",    "horizontal"),
+                               c("center", "top",    "horizontal")
+    ),
+    stringsAsFactors=FALSE)
+    names(TblPos) <- c("x","y","z")
+    return(which(TblPos$x==x & TblPos$y==y & TblPos$z==orient))
 }
 
 exchange <- function(x, y){
