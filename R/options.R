@@ -115,13 +115,13 @@ eYAxis = function(chart, ...) {
 #' \code{lineStyle} accepts feature \code{color, width, type, shadowColor, shadowBlur,
 #' shadowOffsetX, shadowOffsetY}
 #' @param axisLabel A list controlling the axis labels. Default \code{show=TRUE,
-#' rotate=0, margin=8, clicable=FALSE, formatter=NULL, textStyle=list(color="#333")} \cr \cr
+#' rotate=0, margin=8, clicable=FALSE, formatter=NULL, textStyle=list(color='#333')} \cr \cr
 #' \code{textStyle} accepts features \code{color, align, baseline, fontFamily, fontSize,
 #' fontStyle, fontWeight}. \cr
 #' __\code{formatter}__:
 #' \describe{
-#'  \item{sprintf/format string}String to override \code{axisLable$formatter}. It accepts \code{sprintf}
-#' (category and value) and \code{strptime} (time) formats.
+#'  \item{sprintf/format string}{String to override \code{axisLable$formatter}. It accepts \code{sprintf}
+#' (category and value) and \code{strptime} (time) formats.}
 #'  \item{js mode}{a JS function/expression, which is default}
 #' }\cr
 #' \code{axisLabel=list(formatter="%s cm")} is equal to
@@ -412,6 +412,40 @@ setGrid <- function(chart, x=80, y=60, x2=80, y2=60, width=NULL, height=NULL,
     return(chart)
 }
 
+.getGridParam <- function(chart, control, pos, size, horizontal=TRUE){
+    stopifnot(length(pos) == 2)
+    hasZ <- 'timeline' %in% names(chart$x)
+    if (hasZ){
+        if (control == 'timeline')
+            lst <- lapply(c('x', 'y', 'orient'), function(param){
+                chart$x$timeline[[param]] })
+        else
+            lst <- lapply(c('x', 'y', 'orient'), function(param){
+                chart$x$options[[1]][[control]][[param]] })
+
+    }else{
+        lst <- lapply(c('x', 'y', 'orient'), function(param){
+            chart$x[[control]][[param]] })
+    }
+    lstDefault <- c(as.list(pos), ifelse(horizontal, 'horizontal', 'vertical'))
+    names(lst) <- names(lstDefault) <-  c('x', 'y', 'orient')
+    if (!all(sapply(lst, function(l) is.null(l))))
+        lst <- unlist(mergeList(lstDefault, lst)) # x, y , orient
+    else return(rep(NA, 5))
+
+    # x, y, x2, y2, width, height
+    if (!is.na(as.numeric(lst[1]))) x <- as.numeric(lst[1])
+    if (!is.na(as.numeric(lst[2]))) y <- as.numeric(lst[2])
+    height <- width <- NA
+    if (lst[3] == 'horizontal') height <- size else width <- size
+    pos <- ifblank(clockPos(lst[1], lst[2], lst[3]), NA)
+    if (!is.na(pos)){
+        x <- switch(lst[1], left=10, center=100, right=-10)
+        y <- switch(lst[2], top=10, center=100, bottom=-10)
+    }
+    return(c(pos, x, y, height, width))
+}
+
 tuneGrid <- function(chart, ...){
     # tune the grid
     # FIXME: optimize the algorithm
@@ -419,12 +453,33 @@ tuneGrid <- function(chart, ...){
     types <- getSeriesPart(chart, 'type')
     hasZ <- 'timeline' %in% names(chart$x)
     # if not Cartesian Coord chart, skip out
-    if (! all(types %in% c('scatter', 'line', 'bar', 'k')))
+    if (! all(types %in% c('scatter', 'line', 'bar', 'k'))){
         return(chart)
-    else
-        lstGrid <- list()
+    }else{
+        controls <- c('title', 'timeline', 'legend', 'toolbox', 'dataRange', 'dataZoom',
+                       'roamController')
+        gridParam <- c('pos', 'x', 'y', 'height', 'width')
+        dfGrid <- data.frame(matrix(ncol=length(gridParam), nrow=length(controls)))
+        names(dfGrid) <- gridParam
+        rownames(dfGrid) <- controls
+    }
+
+    #---------- get x, y, x1, y1 of each control --------------
+    dfGrid['title',] <- .getGridParam(chart, 'title', c('center', 'bottom'), 30)
+    dfGrid['legend',] <- .getGridParam(chart, 'legend', c('left', 'top'), 30)
+    dfGrid['dataRange',] <- .getGridParam(chart, 'dataRange', c('left', 'bottom'),
+                                          30, FALSE)
+    dfGrid['dataZoom',] <- .getGridParam(chart, 'dataZoom', c('center', 'bottom'), 30)
+    dfGrid['toolbox',] <- .getGridParam(chart, 'toolbox', c('right', 'top'), 30)
+    dfGrid['timeline',] <- .getGridParam(chart, 'timeline', c('center', 'bottom'), 30)
+    dfGrid['roamController',] <- .getGridParam(chart, 'roamController', c('right', 'top'),
+                                               80, FALSE)
+browser()
+    ## title
+
 
     ## set base param
+    lstGrid <- NULL
     redundX <- redundY <- 20
 
     ## extract features list
