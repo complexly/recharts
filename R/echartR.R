@@ -60,7 +60,7 @@
 #'
 #' @return An echart object
 #' @import Hmisc
-#' @importFrom reshape2 dcast
+#' @importFrom data.table dcast
 #' @importFrom plyr join
 #' @export
 #'

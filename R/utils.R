@@ -68,23 +68,58 @@ evalVarArg <- function(x, data, simplify=FALSE, eval=TRUE){
     }
 }
 
+# merge two lists by names,
+# e.g. x = list(a = 1, b = 2), mergeList(x, list(b = 3)) => list(a = 1, b = 3)
+# mergeList(list(a=1, b=2), list(a=NULL, b=3), keep.null=TRUE) ==>
+# list(a=NULL, b=3)
+mergeList = function(x, y, merge.exclude=NULL, skip.merge.na=FALSE,
+                     skip.merge.null=FALSE, keep.null=FALSE) {
+    if (!is.list(y) || length(y) == 0) return(x)
+    yn = names(y)
+    if (length(yn) == 0 || any(yn == '')) {
+      warning('The second list to be merged into the first must be named')
+      return(x)
+    }
+    for (i in yn) {
+      xi = if (length(x[[i]]) == 0) NULL else x[[i]]
+      yi = if (length(y[[i]]) == 0) NULL else y[[i]]
+      if (is.list(xi)) {
+          if (is.list(yi)) x[[i]] = mergeList(xi, yi)
+      } else {
+          if (all(is.null(yi))){
+              if (! skip.merge.null){
+                  if (keep.null) x[i] = list(NULL)
+                  else x[[i]] = NULL
+              }
+          }else if (all(is.na(yi))){
+              if (! skip.merge.na) x[[i]] = yi
+          }else{
+              yiMerge = sapply(merge.exclude, function(s) {
+                  identical(yi, s) })
+              if (!any(yiMerge)) x[[i]] = yi
+          }
+      }
+    }
+    x
+}
+
 # merge two lists by names, e.g. x = list(a = 1, b = 2), mergeList(x, list(b =
 # 3)) => list(a = 1, b = 3)
-mergeList = function(x, y) {
-  if (!is.list(y) || length(y) == 0) return(x)
-  yn = names(y)
-  if (length(yn) == 0 || any(yn == '')) {
-    warning('The second list to be merged into the first must be named')
-    return(x)
-  }
-  for (i in yn) {
-    xi = x[[i]]
-    yi = y[[i]]
-    if (is.list(xi)) {
-      if (is.list(yi)) x[[i]] = mergeList(xi, yi)
-    } else x[[i]] = yi
-  }
-  x
+legacyMergeList = function(x, y) {
+    if (!is.list(y) || length(y) == 0) return(x)
+    yn = names(y)
+    if (length(yn) == 0 || any(yn == '')) {
+        warning('The second list to be merged into the first must be named')
+        return(x)
+    }
+    for (i in yn) {
+        xi = x[[i]]
+        yi = y[[i]]
+        if (is.list(xi)) {
+            if (is.list(yi)) x[[i]] = mergeList(xi, yi)
+        } else x[[i]] = yi
+    }
+    x
 }
 
 # automatic labels from function arguments

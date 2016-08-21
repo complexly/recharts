@@ -77,8 +77,8 @@ automatically deviding based on algorithms of \code{min} and \code{max}.}
 
 \item{axisLine}{A list. Default: \cr
 \code{list(show=TRUE, onZero=FALSE, lineStyle=list( \cr
-type='solid', color='#48b', width=2, shadowColor='rgba(0,0,0,0), shadowBlur=5,
-shadowOffsetX=3, shadowOffsetY=3'))} \cr \cr
+type='solid', color='#48b', width=2, shadowColor='rgba(0,0,0,0)', shadowBlur=5,
+shadowOffsetX=3, shadowOffsetY=3))} \cr \cr
 \code{lineStyle} accepts features \code{color, width, type, shadowColor, shadowBlur,
 shadowOffsetX, shadowOffsetY}}
 
@@ -90,7 +90,16 @@ shadowOffsetX, shadowOffsetY}}
 \item{axisLabel}{A list controlling the axis labels. Default \code{show=TRUE,
 rotate=0, margin=8, clicable=FALSE, formatter=NULL, textStyle=list(color="#333")} \cr \cr
 \code{textStyle} accepts features \code{color, align, baseline, fontFamily, fontSize,
-fontStyle, fontWeight}.}
+fontStyle, fontWeight}. \cr
+\strong{\code{formatter}}:
+\describe{
+ \item{sprintf/format string}{String to override \code{axisLable$formatter}.
+ It accepts \code{sprintf} (category and value) and \code{strptime} (time) formats.}
+ \item{js mode}{a JS function/expression, which is default}
+} \cr
+\code{axisLabel=list(formatter="\%s cm")} is equal to \cr
+\code{axisLabel=list(formatter=JS('function(value) return{value + "cm";}'))} or \cr
+\code{axisLabel=list(formatter='{value} cm')}}
 
 \item{splitLine}{A list controlling the split lines. Default \code{show=TRUE,
 lineStyle=list(color=list("#ccc"), width=1, type="solid")} \cr \cr
@@ -135,6 +144,7 @@ g \%>\% setYAxis(1:2, name="setosa/versicolor") \%>\%
 }
 \references{
 \url{http://echarts.baidu.com/echarts2/doc/option.html#tooltip-line1~xAxis-i}
+
 \url{http://echarts.baidu.com/echarts2/doc/option.html#tooltip-line1~yAxis-i}
 }
 \seealso{

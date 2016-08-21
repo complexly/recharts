@@ -25,7 +25,6 @@ Suggests:
     jsonlite,
     knitr,
     RColorBrewer,
-    reshape2,
     rmarkdown,
     scales,
     shiny (>= 0.12.1)

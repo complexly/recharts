@@ -82,7 +82,7 @@ eYAxis = function(chart, ...) {
 #'  \item{y}{primary y axis}
 #'  \item{x1}{secondary x axis}
 #'  \item{y1}{secondary y axis}
-#' }#'
+#' }
 #' @param type Type of the axis. Could be \code{c('time', 'value', 'category', 'log')}.
 #' Default 'value'.
 #' @param show Logical, whether to show this axis. Default TRUE.
@@ -106,8 +106,8 @@ eYAxis = function(chart, ...) {
 #' automatically deviding based on algorithms of \code{min} and \code{max}.
 #' @param axisLine A list. Default: \cr
 #' \code{list(show=TRUE, onZero=FALSE, lineStyle=list( \cr
-#' type='solid', color='#48b', width=2, shadowColor='rgba(0,0,0,0), shadowBlur=5,
-#' shadowOffsetX=3, shadowOffsetY=3'))} \cr \cr
+#' type='solid', color='#48b', width=2, shadowColor='rgba(0,0,0,0)', shadowBlur=5,
+#' shadowOffsetX=3, shadowOffsetY=3))} \cr \cr
 #' \code{lineStyle} accepts features \code{color, width, type, shadowColor, shadowBlur,
 #' shadowOffsetX, shadowOffsetY}
 #' @param axisTick A list. Default: \cr
@@ -115,17 +115,17 @@ eYAxis = function(chart, ...) {
 #' \code{lineStyle} accepts feature \code{color, width, type, shadowColor, shadowBlur,
 #' shadowOffsetX, shadowOffsetY}
 #' @param axisLabel A list controlling the axis labels. Default \code{show=TRUE,
-#' rotate=0, margin=8, clicable=FALSE, formatter=NULL, textStyle=list(color='#333')} \cr \cr
+#' rotate=0, margin=8, clicable=FALSE, formatter=NULL, textStyle=list(color="#333")} \cr \cr
 #' \code{textStyle} accepts features \code{color, align, baseline, fontFamily, fontSize,
-#' fontStyle, fontWeight}. \cr
-#' __\code{formatter}__:
+#' fontStyle, fontWeight}. \cr \cr
+#' \strong{\code{formatter}}:
 #' \describe{
-#'  \item{sprintf/format string}{String to override \code{axisLable$formatter}. It accepts \code{sprintf}
-#' (category and value) and \code{strptime} (time) formats.}
+#'  \item{sprintf/format string}{String to override \code{axisLable$formatter}.
+#'  It accepts \code{sprintf} (category and value) and \code{strptime} (time) formats.}
 #'  \item{js mode}{a JS function/expression, which is default}
-#' }\cr
-#' \code{axisLabel=list(formatter="%s cm")} is equal to
-#' \code{axisLabel=list(formatter=JS('function(value) return{value + "cm";}'))} or
+#' } \cr
+#' \code{axisLabel=list(formatter="\%s cm")} is equal to \cr
+#' \code{axisLabel=list(formatter=JS('function(value) return{value + "cm";}'))} or \cr
 #' \code{axisLabel=list(formatter='{value} cm')}
 #' @param splitLine A list controlling the split lines. Default \code{show=TRUE,
 #' lineStyle=list(color=list("#ccc"), width=1, type="solid")} \cr \cr
@@ -413,37 +413,49 @@ setGrid <- function(chart, x=80, y=60, x2=80, y2=60, width=NULL, height=NULL,
 }
 
 .getGridParam <- function(chart, control, pos, size, horizontal=TRUE){
-    stopifnot(length(pos) == 2)
+    stopifnot(length(pos) == 4)  ## x, y, x2, y2
+    stopifnot(length(size) == 2) ## height, width
     hasZ <- 'timeline' %in% names(chart$x)
     if (hasZ){
-        if (control == 'timeline')
-            lst <- lapply(c('x', 'y', 'orient'), function(param){
-                chart$x$timeline[[param]] })
-        else
-            lst <- lapply(c('x', 'y', 'orient'), function(param){
-                chart$x$options[[1]][[control]][[param]] })
-
+        if (control == 'timeline')  obj <- chart$x$timeline
+        else obj <- chart$x$options[[1]][[control]]
     }else{
-        lst <- lapply(c('x', 'y', 'orient'), function(param){
-            chart$x[[control]][[param]] })
+        obj <- chart$x[[control]]
     }
-    lstDefault <- c(as.list(pos), ifelse(horizontal, 'horizontal', 'vertical'))
-    names(lst) <- names(lstDefault) <-  c('x', 'y', 'orient')
-    if (!all(sapply(lst, function(l) is.null(l))))
-        lst <- unlist(mergeList(lstDefault, lst)) # x, y , orient
-    else return(rep(NA, 5))
+    lst <- lapply(c('x', 'y', 'x2', 'y2', 'orient', 'height', 'width'),
+                  function(param){obj[[param]]})
+    lstDefault <- c(as.list(pos), ifelse(horizontal, 'horizontal', 'vertical'),
+                    as.list(size))
+    names(lst) <- names(lstDefault) <-  c('x', 'y', 'x2', 'y2', 'orient',
+                                          'height', 'width')
+
+    if (!is.null(obj))
+        lst <- unlist(mergeList(lstDefault, lst, keep.null=TRUE,
+                                skip.merge.null=TRUE))
+        # x, y , orient
+    else return(rep(NA, 8))
 
     # x, y, x2, y2, width, height
-    if (!is.na(as.numeric(lst[1]))) x <- as.numeric(lst[1])
-    if (!is.na(as.numeric(lst[2]))) y <- as.numeric(lst[2])
-    height <- width <- NA
-    if (lst[3] == 'horizontal') height <- size else width <- size
-    pos <- ifblank(clockPos(lst[1], lst[2], lst[3]), NA)
-    if (!is.na(pos)){
-        x <- switch(lst[1], left=10, center=100, right=-10)
-        y <- switch(lst[2], top=10, center=100, bottom=-10)
-    }
-    return(c(pos, x, y, height, width))
+    x <- if (lst['x'] %in% c('left', 'center', 'right')) lst['x'] else
+        suppressWarnings(as.numeric(lst['x']))
+    if (is.numeric(x)) x <- if (x<200) 'left' else if (x<400) 'center' else 'right'
+    y <- if (lst['y'] %in% c('top', 'center', 'bottom')) lst['y'] else
+        suppressWarnings(as.numeric(lst['y']))
+    if (is.numeric(y)) y <- if (y<200) 'top' else if (y<400) 'center' else 'bottom'
+    x2 <- suppressWarnings(as.numeric(lst['x2']))
+    y2 <- suppressWarnings(as.numeric(lst['y2']))
+    height <- suppressWarnings(as.numeric(lst['height']))
+    width <- suppressWarnings(as.numeric(lst['width']))
+    pos <- clockPos(x, y, lst['orient'])
+
+    x <- suppressWarnings(as.numeric(lst['x']))
+    y <- suppressWarnings(as.numeric(lst['y']))
+    if (is.na(x)) x <- switch(lst['x'], left=0, center=0, right=NA)
+    if (is.na(x2)) x2 <- switch(lst['x'], left=NA, center=0, right=0)
+    if (is.na(y)) y <- switch(lst['y'], top=0, center=0, bottom=NA)
+    if (is.na(y2)) y2 <- switch(lst['y'], top=NA, center=0, bottom=0)
+
+    return(c(pos, x, y, x2, y2, height, width, lst['orient']=='horizontal'))
 }
 
 tuneGrid <- function(chart, ...){
@@ -458,117 +470,132 @@ tuneGrid <- function(chart, ...){
     }else{
         controls <- c('title', 'timeline', 'legend', 'toolbox', 'dataRange', 'dataZoom',
                        'roamController')
-        gridParam <- c('pos', 'x', 'y', 'height', 'width')
+        gridParam <- c('pos', 'x', 'y', 'x2', 'y2', 'height', 'width', 'orient')
         dfGrid <- data.frame(matrix(ncol=length(gridParam), nrow=length(controls)))
-        names(dfGrid) <- gridParam
+        colnames(dfGrid) <- gridParam
         rownames(dfGrid) <- controls
     }
 
     #---------- get x, y, x1, y1 of each control --------------
-    dfGrid['title',] <- .getGridParam(chart, 'title', c('center', 'bottom'), 30)
-    dfGrid['legend',] <- .getGridParam(chart, 'legend', c('left', 'top'), 30)
-    dfGrid['dataRange',] <- .getGridParam(chart, 'dataRange', c('left', 'bottom'),
-                                          30, FALSE)
-    dfGrid['dataZoom',] <- .getGridParam(chart, 'dataZoom', c('center', 'bottom'), 30)
-    dfGrid['toolbox',] <- .getGridParam(chart, 'toolbox', c('right', 'top'), 30)
-    dfGrid['timeline',] <- .getGridParam(chart, 'timeline', c('center', 'bottom'), 30)
-    dfGrid['roamController',] <- .getGridParam(chart, 'roamController', c('right', 'top'),
-                                               80, FALSE)
-browser()
-    ## title
+    dfGrid['title',] <- .getGridParam(
+        chart, 'title', c('center', 'bottom', NA, NA), c(50, 50))
+    dfGrid['legend',] <- .getGridParam(
+        chart, 'legend', c('left', 'top', NA, NA), c(50, 50))
+    dfGrid['dataRange',] <- .getGridParam(
+        chart, 'dataRange', c('left', 'bottom', NA, NA), c(50, 120), FALSE)
+    dfGrid['dataZoom',] <- .getGridParam(
+        chart, 'dataZoom', c('center', 'bottom', NA, NA), c(30, 30))
+    dfGrid['toolbox',] <- .getGridParam(
+        chart, 'toolbox', c('right', 'top', NA, NA), c(50, 50))
+    dfGrid['timeline',] <- .getGridParam(
+        chart, 'timeline', c('center', 'bottom', 80, 0), c(50, 50))
+    dfGrid['roamController',] <- .getGridParam(
+        chart, 'roamController', c('right', 'top', NA, NA), c(80, 120), FALSE)
+    # remove all NA rows
+    dfGrid <- dfGrid[!(apply(dfGrid, 1, function(row) all(is.na(row)))),]
 
+    # dfGrid <<- dfGrid
+    # browser()
 
-    ## set base param
-    lstGrid <- NULL
-    redundX <- redundY <- 20
+    sumGrid <- dcast(data.table(dfGrid), orient + pos ~ ., fun=sum,
+                     value.var=c("x", "y", "x2", "y2", "height", "width"))
+    sumGrid$x <- ifblank(
+        rowSums(sumGrid[,list(x_sum_., width_sum_.)], na.rm=TRUE), NA)
+    sumGrid$y <- ifblank(
+        rowSums(sumGrid[,list(y_sum_., height_sum_.)], na.rm=TRUE), NA)
+    sumGrid$x2 <- ifblank(
+        rowSums(sumGrid[, list(x2_sum_., width_sum_.)], na.rm=TRUE), NA)
+    sumGrid$y2 <- ifblank(
+        rowSums(sumGrid[, list(y2_sum_., height_sum_.)], na.rm=TRUE), NA)
 
-    ## extract features list
-    if (hasZ){
-        lstGrid$y2 <- ifnull(lstGrid$y2, 60) + ifnull(chart$x$timeline$y2, 50) +
-            ifnull(chart$x$timeline$width, 50) - redundY
-        lst <- chart$x$options[[1]]
-    }else{
-        lst <- chart$x
-    }
-    ## title
-    if (!is.null(lst$title)){
-        if (nchar(lst$title$text) > 0) addY <- 25 else addY <- 0
-        if (nchar(lst$title$subtext) > 0) addY <- addY + 15
-        if (lst$title$y == 'bottom'){
-            lstGrid$y2 <- ifnull(lstGrid$y2, 60) + addY
-        }else if (lst$title$y == 'top'){
-            lstGrid$y <- ifnull(lstGrid$y, 60) + addY
-        }
-    }
-    ## legend
-    if (!is.null(lst$legend)){
-        if (is.null(lst$legend$show)
-            || (! is.null(lst$legend$show && lst$legend$show))){
-            addY <- 15
-            addX <- 15
-            if (ifnull(lst$legend$orient, 'horizontal') == 'horizontal'){
-                if (ifnull(lst$legend$y, 'top') == 'bottom'){
-                    lstGrid$y2 <- ifnull(lstGrid$y2, 60) + addY
-                }else if (ifnull(lst$legend$y, 'top') == 'top'){
-                    lstGrid$y <- ifnull(lstGrid$y, 60) + addY
+    # sumGrid <<- sumGrid
+
+    lstGrid <- list()
+    if (length(sumGrid[pos %in% c(8,9,10), x]) > 0)
+        if (max(sumGrid[pos %in% c(8,9,10), x]) > 80)
+            lstGrid$x <- max(sumGrid[pos %in% c(8,9,10), x]) + 30
+    if (length(sumGrid[pos %in% c(11,12,1), y]) > 0)
+        if (max(sumGrid[pos %in% c(11,12,1), y]) > 60)
+            lstGrid$y <- max(sumGrid[pos %in% c(11,12,1), y]) + 20
+    if (length(sumGrid[pos %in% c(2,3,4), x2]) > 0)
+        if (max(sumGrid[pos %in% c(2,3,4), x2]) > 80)
+            lstGrid$x2 <- max(sumGrid[pos %in% c(2,3,4), x2]) + 30
+    if (length(sumGrid[pos %in% c(5,6,7), y2]) > 0)
+        if (max(sumGrid[pos %in% c(5,6,7), y2]) > 60)
+            lstGrid$y2 <- max(sumGrid[pos %in% c(5,6,7), y2]) + 20
+
+    ## tune grid if there are duplicated pos
+    if (any(duplicated(dfGrid$pos))){
+        dupPos <- table(dfGrid$pos)
+        dupPos <- as.numeric(names(dupPos[dupPos > 1]))
+        for (i in dupPos){
+            dfDupGrid <- dfGrid[dfGrid$pos == i,]
+            len <- nrow(dfDupGrid)
+            widgets <- row.names(dfDupGrid)[2:len]
+            widgetsNotTL <-widgets[!widgets %in% 'timeline']
+            if (i %in% c(11,12,1)){
+                if (hasZ){
+                    chart$x$options[[1]][[widgets]]$y <- sum(
+                        dfDupGrid$y[2:len], dfDupGrid$height[1:(len-1)], na.rm=TRUE)
+                }else{
+                    chart$x[[widgets]]$y <- sum(
+                        dfDupGrid$y[2:len], dfDupGrid$height[1:(len-1)], na.rm=TRUE)
                 }
-            }
-            if (ifnull(lst$legend$orient, 'horizontal') == 'horizontal'){
-                if (ifnull(lst$legend$x, 'left') == 'left'){
-                    lstGrid$x <- ifnull(lstGrid$x, 80) + addX
-                }else if (ifnull(lst$legend$x, 'left') == 'right'){
-                    lstGrid$x2 <- ifnull(lstGrid$x2, 80) + addX
+            }else if (i %in% c(2,3,4)){
+                if (hasZ){
+                    chart$x$options[[1]][[widgets]]$x2 <- sum(
+                        dfDupGrid$x2[2:len], dfDupGrid$width[1:(len-1)], na.rm=TRUE)
+                    if (length(widgetsNotTL) > 0)
+                        chart$x$options[[1]][[widgetsNotTL]]$x <- dev.size('px')[1] -
+                            chart$x$options[[1]][[widgetsNotTL]]$x2
+                }else{
+                    chart$x[[widgets]]$x2 <- sum(
+                        dfDupGrid$x2[2:len], dfDupGrid$width[1:(len-1)], na.rm=TRUE)
+                    if (length(widgetsNotTL) > 0)
+                        chart$x[[widgetsNotTL]]$x <- dev.size('px')[1] -
+                            chart$x[[widgetsNotTL]]$x2
                 }
-            }
-        }
-    }
-    ## dataZoom
-    if (!is.null(lst$dataZoom)){
-        if (!is.null(lst$dataZoom$show)){
-            if (lst$dataZoom$show) {
-                addY <- ifnull(lst$dataZoom$height, 20)
-                addX <- ifnull(lst$dataZoom$width, 20)
-                if (ifnull(lst$dataZoom$orient, 'horizontal') == 'horizontal'){
-                    if (ifnull(lst$dataZoom$y, 'bottom') == 'bottom'){
-                        lstGrid$y2 <- ifnull(lstGrid$y2, 60) + addY
-                    }else if (ifnull(lst$dataZoom$y, 'bottom') == 'top'){
-                        lstGrid$y <- ifnull(lstGrid$y, 60) + addY
-                    }
+            }else if (i %in% c(5,6,7)){
+                if (hasZ){
+                    chart$x$options[[1]][[widgets]]$y2 <- sum(
+                        dfDupGrid$y2[2:len], dfDupGrid$height[1:(len-1)], na.rm=TRUE)
+                    if (length(widgetsNotTL) > 0)
+                        chart$x$options[[1]][[widgetsNotTL]]$y <- dev.size('px')[2] -
+                            chart$x$options[[1]][[widgetsNotTL]]$y2
+                }else{
+                    chart$x[[widgets]]$y2 <- sum(
+                        dfDupGrid$y2[2:len], dfDupGrid$height[1:(len-1)], na.rm=TRUE)
+                    if (length(widgetsNotTL) > 0)
+                        chart$x[[widgetsNotTL]]$y <- dev.size('px')[2] -
+                            chart$x[[widgetsNotTL]]$y2
                 }
-                if (ifnull(lst$dataZoom$orient, 'horizontal') == 'horizontal'){
-                    if (ifnull(lst$dataZoom$x, 'center') == 'left'){
-                        lstGrid$x <- ifnull(lstGrid$x, 80) + addX
-                    }else if (ifnull(lst$dataZoom$x, 'center') == 'right'){
-                        lstGrid$x2 <- ifnull(lstGrid$x2, 80) + addX
-                    }
-                }
-            }
-        }
-    }
-    ## dataRange
-    if (!is.null(lst$dataRange)){
-        if (is.null(lst$dataRange$show)
-            || (!is.null(lst$dataRange$show) && lst$dataRange$show)){
-            addY <- 30
-            addX <- 30
-            if (ifnull(lst$dataRange$orient, 'vertical') == 'horizontal'){
-                if (ifnull(lst$dataRange$y, 'bottom') == 'bottom'){
-                    lstGrid$y2 <- ifnull(lstGrid$y2, 60) + addY
-                }else if (isnull(lst$dataRange$y, 'bottom') == 'top'){
-                    lstGrid$y <- ifnull(lstGrid$y, 60) + addY
-                }
-            }
-            if (ifnull(lst$dataRange$orient, 'vertical') == 'horizontal'){
-                if (ifnull(lst$dataRange$x, 'left') == 'left'){
-                    lstGrid$x <- ifnull(lstGrid$x, 80) + addX
-                }else if (ifnull(lst$Range$x, 'left') == 'right'){
-                    lstGrid$x2 <- ifnull(lstGrid$x2, 80) + addX
+            }else if (i %in% c(8,9,10)){
+                if (hasZ){
+                    chart$x$options[[1]][[widgets]]$x <- sum(
+                        dfDupGrid$x[2:len], dfDupGrid$width[1:(len-1)], na.rm=TRUE)
+                }else{
+                    chart$x[[widgets]]$x <- sum(
+                        dfDupGrid$x[2:len], dfDupGrid$width[1:(len-1)], na.rm=TRUE)
                 }
             }
         }
     }
+
+    ## additional tuning
+    if ('dataZoom' %in% row.names(dfGrid))
+        if (dfGrid['dataZoom', 'orient'] == 1){
+            if (hasZ) chart$x$options[[1]]$dataZoom$x <- lstGrid$x
+            else chart$x$dataZoom$x <- lstGrid$x
+        }else{
+            if (hasZ) chart$x$options[[1]]$dataZoom$y <- lstGrid$y
+            else chart$x$dataZoom$y <- lstGrid$y
+        }
+    if ('timeline' %in% row.names(dfGrid)){
+       chart$x$timeline$x <- lstGrid$x
+       chart$x$timeline$x2 <- lstGrid$x2
+    }
+
     ## wrap up
-
     # collect all grid features
     if (length(lstGrid) > 0){
         if (hasZ)
@@ -1140,27 +1167,27 @@ getColors <- function(palette, ...){
     }
 }
 
-makeDataZoom <- function(show=FALSE, pos=6, range=NULL, width = 20, pos.adjust=0,
+makeDataZoom <- function(show=FALSE, pos=6, range=NULL, width = 20,
                          fill='rgba(144,197,237,0.2)',
                          handle='rgba(70,130,180,0.8)', ...){
     # Work function for setDataZoom
     if (is.numeric(pos[1])) pos <- vecPos(pos)
     if (!is.null(show)) {
         lstdataZoom <- list(show=show, fillerColor=fill, handleColor=handle)
-        if (pos[[1]]=='left' && pos[[3]]=='vertical'){
-            lstdataZoom[['x']] <- 0
-        }else if (pos[[3]]=='horizontal'){
-            lstdataZoom[['x']] <- 80
-        }else if (pos[[1]]=='right' && pos[[3]]=='vertical'){
-            lstdataZoom[['x']] <- dev.size('px')[1] - 80
-        }
-        if (pos[[3]]=='vertical'){
+        if (pos[[3]] == 'vertical'){
             lstdataZoom[['y']] <- 60
-        }else if (pos[[1]]=='top' && pos[[3]]=='horizontal'){
-            lstdataZoom[['y']] <- 30
+            if (pos[[1]]=='left') lstdataZoom[['x']] <- 0
+            if (pos[[1]]=='right') lstdataZoom[['x']] <- dev.size('px')[1] - 80
+        }else{
+            if (! (pos[[1]] == 'center' && pos[[2]] == 'bottom')){
+                lstdataZoom[['x']] <- 80
+                if (pos[[2]]=='top') lstdataZoom[['y']] <- 50
+            }
         }
-        if (pos.adjust != 0) lstdataZoom[['y']] <- dev.size('px')[2] - pos.adjust
+        # if (pos.adjust != 0) lstdataZoom[['y']] <- dev.size('px')[2] - pos.adjust
 
+        # lstdataZoom[['x']] <- pos[[1]]
+        # lstdataZoom[['y']] <- pos[[2]]
         lstdataZoom[['orient']] <- pos[[3]]
         if (lstdataZoom$orient == 'horizontal') lstdataZoom[['height']] <- width
         if (lstdataZoom$orient == 'vertical') lstdataZoom[['width']] <- width
@@ -1213,18 +1240,18 @@ makeDataZoom <- function(show=FALSE, pos=6, range=NULL, width = 20, pos.adjust=0
 #' g1 %>% setDataZoom(fill=rgba(c(col2rgb('lightgreen'), 0.2)),
 #'                   handle=rgba(c(col2rgb('darkgreen'), 0.5)))
 #' }
-setDataZoom <- function(chart, show=TRUE, pos=6, range=NULL, width=20, pos.adjust=0,
+setDataZoom <- function(chart, show=TRUE, pos=6, range=NULL, width=20,
                         fill='rgba(144,197,237,0.2)',
                         handle='rgba(70,130,180,0.8)', ...){
     stopifnot(inherits(chart, 'echarts'))
     hasZ <- 'timeline' %in% names(chart$x)
     if (hasZ){
         chart$x$options[[1]][['dataZoom']] <- makeDataZoom(
-            show=show, pos=pos, range=range, pos.adjust=pos.adjust, fill=fill,
+            show=show, pos=pos, range=range, fill=fill,
             handle=handle)
     }else{
         chart$x[['dataZoom']] <- makeDataZoom(
-            show=show, pos=pos, range=range, pos.adjust=pos.adjust, fill=fill,
+            show=show, pos=pos, range=range, fill=fill,
             handle=handle)
     }
     return(chart %>% tuneGrid())
@@ -2253,10 +2280,10 @@ setTimeline <- function(chart, show=TRUE, type=c('time', 'number'), realtime=TRU
     if (! 'timeline' %in% names(chart$x)) return(chart)
     lst <- chart$x$timeline
     type <- match.arg(type)
-    if (! inherits(getMeta(chart$x$options[[1]])$z[,1], c("Date", "POSIXct", "POSIXlt"))){
-        type <- 'number'
-    }else{
+    if (inherits(getMeta(chart$x$options[[1]])$z[,1], c("Date", "POSIXct", "POSIXlt"))){
         type <- 'time'
+    }else{
+        type <- 'number'
     }
 
     controlPosition <- match.arg(controlPosition)

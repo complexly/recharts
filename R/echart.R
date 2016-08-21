@@ -250,7 +250,7 @@ echartr = function(
     )
 
     if (hasZ){
-        chart <- chart %>% setTimeline(show=TRUE, y2=50, data=uniZ)
+        chart <- chart %>% setTimeline(show=TRUE, data=uniZ)
     }
 
 
