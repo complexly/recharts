@@ -436,18 +436,20 @@ setGrid <- function(chart, x=80, y=60, x2=80, y2=60, width=NULL, height=NULL,
     else return(rep(NA, 8))
 
     # x, y, x2, y2, width, height
-    x = y = x2 = y2 = NA
     x <- ifelse(lst['x'] %in% c('left', 'center', 'right'), lst['x'],
         suppressWarnings(as.numeric(lst['x'])))
-    if (is.numeric(x)) x <- if (x<80) 'left' else if (x<400) 'center' else 'right'
+    if (is.numeric(x)) x <- if (ifna(x, 0) < 80) 'left' else
+        if (ifna(x, 0) < 400) 'center' else 'right'
     y <- ifelse(lst['y'] %in% c('top', 'center', 'bottom'), lst['y'],
         suppressWarnings(as.numeric(lst['y'])))
-    if (is.numeric(y)) y <- if (y<60) 'top' else if (y<400) 'center' else 'bottom'
+    if (is.numeric(y)) y <- if (ifna(y, 0) < 60) 'top' else
+        if (ifna(y, 0) < 400) 'center' else 'bottom'
     x2 <- suppressWarnings(as.numeric(lst['x2']))
     y2 <- suppressWarnings(as.numeric(lst['y2']))
     height <- suppressWarnings(as.numeric(lst['height']))
     width <- suppressWarnings(as.numeric(lst['width']))
-    pos <- ifnull(clockPos(x, y, lst['orient']), 12)
+    if (length(clockPos(x, y, lst['orient'])) == 0)  pos <- 12
+    else pos <- clockPos(x, y, lst['orient'])
 
     x <- suppressWarnings(as.numeric(lst['x']))
     y <- suppressWarnings(as.numeric(lst['y']))
@@ -536,50 +538,74 @@ tuneGrid <- function(chart, ...){
             widgets <- row.names(dfDupGrid)[2:len]
             widgetsNotTL <-widgets[!widgets %in% 'timeline']
             if (i %in% c(11,12,1)){
+                dfDupGrid$cumHeight <- cumsum(dfDupGrid$height)
+                cumHeight <- rowSums(dfDupGrid[1:(len-1), c('y', "cumHeight")],
+                                     na.rm=TRUE)
+                names(cumHeight) <- widgets
                 if (hasZ){
-                    chart$x$options[[1]][[widgets]]$y <- rowSums(
-                        dfDupGrid[1:(len-1), c('y', "height")], na.rm=TRUE)
+                    for (j in widgets){
+                        if (j == 'timeline') chart$x$timeline[[j]]$y =
+                                unname(cumHeight[j])
+                        else chart$x$options[[1]][[j]]$y = unname(cumHeight[j])
+                    }
                 }else{
-                    chart$x[[widgets]]$y <- rowSums(
-                        dfDupGrid[1:(len-1), c('y', "height")], na.rm=TRUE)
+                    for (j in widgets) chart$x[[j]]$y = unname(cumHeight[j])
                 }
             }else if (i %in% c(2,3,4)){
-                dfDupGrid$cumWidth <- cumsum(dfDupGrid$Width)
+                dfDupGrid$cumWidth <- cumsum(dfDupGrid$width)
+                cumWidth <- rowSums(dfDupGrid[1:(len-1), c('x2', "cumWidth")],
+                                     na.rm=TRUE)
+                names(cumWidth) <- widgets
                 if (hasZ){
-                    chart$x$options[[1]][[widgets]]$x2 <- rowSums(
-                        dfDupGrid[1:(len-1), c('x2', "cumWidth")], na.rm=TRUE)
-                    if (length(widgetsNotTL) > 0)
-                        chart$x$options[[1]][[widgetsNotTL]]$x <- dev.size('px')[1] -
-                            chart$x$options[[1]][[widgetsNotTL]]$x2
+                    for (j in widgets){
+                        if (j == 'timeline') chart$x$timeline[[j]]$x2 =
+                                unname(cumWidth[j])
+                        else {
+                            chart$x$options[[1]][[j]]$x2 = unname(cumWidth[j])
+                            chart$x$options[[1]][[j]]$x = dev.size('px')[1] -
+                                chart$x$options[[1]][[j]]$x2
+                        }
+                    }
                 }else{
-                    chart$x[[widgets]]$x2 <- rowSums(
-                        dfDupGrid[1:(len-1), c('x2', "cumWidth")], na.rm=TRUE)
-                    if (length(widgetsNotTL) > 0)
-                        chart$x[[widgetsNotTL]]$x <- dev.size('px')[1] -
-                            chart$x[[widgetsNotTL]]$x2
+                    for (j in widgets) {
+                        chart$x[[j]]$x2 = unname(cumWidth[j])
+                        chart$x[[j]]$x = dev.size('px')[1] - chart$x[[j]]$x2
+                    }
                 }
             }else if (i %in% c(5,6,7)){
-                dfDupGrid$cumHeight <- cumsum(dfDupGrid$Height)
+                dfDupGrid$cumHeight <- cumsum(dfDupGrid$height)
+                cumHeight <- rowSums(dfDupGrid[1:(len-1), c('y2', "cumHeight")],
+                                     na.rm=TRUE)
+                names(cumHeight) <- widgets
                 if (hasZ){
-                    chart$x$options[[1]][[widgets]]$y2 <- rowSums(
-                        dfDupGrid[1:(len-1), c('y2', "cumHeight")], na.rm=TRUE)
-                    if (length(widgetsNotTL) > 0)
-                        chart$x$options[[1]][[widgetsNotTL]]$y <- dev.size('px')[2] -
-                            chart$x$options[[1]][[widgetsNotTL]]$y2
+                    for (j in widgets){
+                        if (j == 'timeline') chart$x$timeline[[j]]$y2 =
+                                unname(cumHeight[j])
+                        else {
+                            chart$x$options[[1]][[j]]$y2 = unname(cumHeight[j])
+                            chart$x$options[[1]][[j]]$y = dev.size('px')[2] -
+                                chart$x$options[[1]][[j]]$y2
+                        }
+                    }
                 }else{
-                    chart$x[[widgets]]$y2 <- rowSums(
-                        dfDupGrid[1:(len-1), c('y2', "cumHeight")], na.rm=TRUE)
-                    if (length(widgetsNotTL) > 0)
-                        chart$x[[widgetsNotTL]]$y <- dev.size('px')[2] -
-                            chart$x[[widgetsNotTL]]$y2
+                    for (j in widgets) {
+                        chart$x[[j]]$y2 = unname(cumHeight[j])
+                        chart$x[[j]]$y = dev.size('px')[2] - chart$x[[j]]$y2
+                    }
                 }
             }else if (i %in% c(8,9,10)){
+                dfDupGrid$cumWidth <- cumsum(dfDupGrid$width)
+                cumWidth <- rowSums(dfDupGrid[1:(len-1), c('x', "cumWidth")],
+                                    na.rm=TRUE)
+                names(cumWidth) <- widgets
                 if (hasZ){
-                    chart$x$options[[1]][[widgets]]$x <- rowSums(
-                        dfDupGrid[1:(len-1), c('x', "width")], na.rm=TRUE)
+                    for (j in widgets){
+                        if (j == 'timeline') chart$x$timeline[[j]]$x =
+                                unname(cumWidth[j])
+                        else chart$x$options[[1]][[j]]$x = unname(cumWidth[j])
+                    }
                 }else{
-                    chart$x[[widgets]]$x <- rowSums(
-                        dfDupGrid[1:(len-1), c('x', "width")], na.rm=TRUE)
+                    for (j in widgets) chart$x[[j]]$x = unname(cumWidth[j])
                 }
             }
         }
