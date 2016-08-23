@@ -172,9 +172,8 @@ series_line = function(lst, type, return=NULL, ...) {
 
 series_k <- function(lst, type, return=NULL, ...){
     # g=echartr(stock, date, c(open, close, low, high), type='k')
-    if (is.null(lst$y) || ncol(lst$y) < 4)
-        stop('y must contain four columns: open, close, low, high.')
-    data <- cbind(lst$y[,1:4], lst$x[,1])
+
+    data <- cbind(lst$y[,1], lst$x[,1])
     obj <- list(list(name='Stock', type=type$type[1], data=asEchartData(lst$y[,1:4])))
     if (is.null(return)){
         return(obj)
@@ -183,6 +182,18 @@ series_k <- function(lst, type, return=NULL, ...){
     }
 }
 
+series_pie <- function(lst, type, return=NULL, ...){
+    # g=echartr(stock, date, c(open, close, low, high), type='k')
+
+    data <- cbind(lst$y[,1], lst$series[,1])
+    data <- dcast()
+    obj <- list(list(name='Stock', type=type$type[1], data=asEchartData(lst$y[,1:4])))
+    if (is.null(return)){
+        return(obj)
+    }else{
+        return(obj[intersect(names(obj), return)])
+    }
+}
 #---------------------------legacy functions-----------------------------------
 # split the data matrix for a scatterplot by series
 data_scatter = function(x, y, series = NULL, type = 'scatter') {

@@ -296,12 +296,12 @@ flipAxis <- function(chart, flip=TRUE, ...){
 }
 
 
-#' Set \code{grid} of Echarts Widgts And Pane
+#' Set \code{grid} of Echarts Widgets And Pane
 #'
 #' When an echart object is generated, you can modify it by setting grid using
-#' \code{\link{\%>\%}}.
+#' \code{\link{\%>\%}}. \cr
 #' \strong{It is recommended to put \code{setGrid} at the end of the piped command.} \cr
-#' when used for 'pane', it is only applicable for \code{scatter, point, bubble,
+#' When used for 'pane', it is only applicable for \code{scatter, point, bubble,
 #' line, area, bar, histogram}. When used for 'timeline', it only take in params
 #' \code{x, y, x2, y2}. When used for 'legend', 'title', 'dataZoom', 'dataRange',
 #'  'toolbox', 'roamController', it only takes in params \code{x, y}.
@@ -380,6 +380,48 @@ setGrid <- function(chart, x=80, y=60, x2=80, y2=60, width=NULL, height=NULL,
     }
 
     return(chart)
+}
+
+#' @export
+#' @rdname setGrid
+tunePosTitle <- function(chart, x, y, ...){
+    setGrid(chart, x=x, y=y, widget='title', ...)
+}
+
+#' @export
+#' @rdname setGrid
+tunePosLegend <- function(chart, x, y, ...){
+    setGrid(chart, x=x, y=y, widget='legend', ...)
+}
+
+#' @export
+#' @rdname setGrid
+tunePosDataZoom <- function(chart, x, y, ...){
+    setGrid(chart, x=x, y=y, widget='dataZoom', ...)
+}
+
+#' @export
+#' @rdname setGrid
+tunePosDataRange <- function(chart, x, y, ...){
+    setGrid(chart, x=x, y=y, widget='dataRange', ...)
+}
+
+#' @export
+#' @rdname setGrid
+tunePosTimeline <- function(chart, x, y, x2, y2, ...){
+    setGrid(chart, x=x, y=y, x2=x2, y2=y2, widget='timeline', ...)
+}
+
+#' @export
+#' @rdname setGrid
+tunePosToolbox <- function(chart, x, y, ...){
+    setGrid(chart, x=x, y=y, widget='toolbox', ...)
+}
+
+#' @export
+#' @rdname setGrid
+tunePosRoam <- function(chart, x, y, ...){
+    setGrid(chart, x=x, y=y, widget='roamController', ...)
 }
 
 .getGridParam <- function(chart, control, pos, size, horizontal=TRUE){
@@ -834,7 +876,7 @@ makeToolbox <- function(toolbox=c(TRUE,'cn'), type='auto',
             lstToolbox$disableColor <- disableColor
         if (! missing(effectiveColor)) if (effectiveColor != 'red')
             lstToolbox$effectiveColor <- effectiveColor
-        if (! missing(shwoTitle)) if (! showTitle) lstToolbox$showTitle <- showTitle
+        if (! missing(showTitle)) if (! showTitle) lstToolbox$showTitle <- showTitle
         if (! missing(textStyle)) if (is.null(textStyle))
             lstToolbox$textStyle <- textStyle
 

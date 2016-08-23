@@ -90,7 +90,7 @@ shadowOffsetX, shadowOffsetY}}
 \item{axisLabel}{A list controlling the axis labels. Default \code{show=TRUE,
 rotate=0, margin=8, clicable=FALSE, formatter=NULL, textStyle=list(color="#333")} \cr \cr
 \code{textStyle} accepts features \code{color, align, baseline, fontFamily, fontSize,
-fontStyle, fontWeight}. \cr
+fontStyle, fontWeight}. \cr \cr
 \strong{\code{formatter}}:
 \describe{
  \item{sprintf/format string}{String to override \code{axisLable$formatter}.
