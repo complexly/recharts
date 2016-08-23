@@ -1,63 +1,3 @@
-eAxis = function(
-    # Create an axis for a chart
-    #
-    # Add an axis to a chart.
-    #
-    # This function modified a few default options for the axis component in
-    # ECharts: 1) \code{scale = TRUE} (was \code{FALSE} by default in ECharts); 2)
-    # \code{axisLine$onZero = FALSE} (was \code{TRUE} in ECharts).
-    # @rdname axis
-    chart, which = c('x', 'y'),
-    type = c('value', 'category', 'time', 'log'), show = TRUE,
-    position = c('bottom', 'top', 'left', 'right'),
-    name = '', nameLocation = c('end', 'start'), nameTextStyle = emptyList(),
-    boundaryGap = c(0, 0), min = NULL, max = NULL, scale = TRUE, splitNumber = NULL,
-    axisLine = list(show = TRUE, onZero = FALSE), axisTick = list(show = FALSE),
-    axisLabel = list(show = TRUE), splitLine = list(show = TRUE),
-    splitArea = list(show = FALSE), data = list()
-) {
-    which = match.arg(which)
-    odata = getMeta(chart)[[which]]  # original data along the axis
-    if (missing(type)) type = axisType(odata, which)
-    if (missing(position)) position = if (which == 'x') 'bottom' else 'left'
-    if (missing(data) && type == 'category') {
-    data = I(levels(as.factor(odata)))
-    }
-
-    x = chart$x
-    i = paste0(which, 'Axis')
-    o = list(
-        type = match.arg(type), show = show, position = match.arg(position),
-        name = name, nameLocation = match.arg(nameLocation), nameTextStyle = nameTextStyle,
-        boundaryGap = boundaryGap, min = min, max = max, scale = scale,
-        splitNumber = splitNumber, axisLine = axisLine, axisTick = axisTick,
-        axisLabel = axisLabel, splitLine = splitLine, splitArea = splitArea, data = data
-    )
-    if (length(x[[i]])) {
-        # only merge the arguments that are not missing, e.g. eAxis(min = 0) will
-        # only override 'min' but will not override the 'name' attribute
-        a = intersect(names(as.list(match.call()[-1])), names(o))  #;browser()
-        x[[i]] = mergeList(x[[i]], o[a])
-    } else {
-        x[[i]] = mergeList(x[[i]], o)
-    }
-    chart$x = x
-
-    return(chart)
-}
-
-
-eXAxis = function(chart, ...) {
-    # @rdname axis
-    eAxis(chart, which = 'x', ...)
-}
-
-
-eYAxis = function(chart, ...) {
-    # @rdname axis
-    eAxis(chart, which = 'y', ...)
-}
-
 #' Set \code{x|yAxis} of Echarts (Primary or Secondary)
 #'
 #' When an echart object is generated, you can modify it by setting axis using
@@ -221,10 +161,10 @@ setAxis = function(
             position = if (axIdx == 0) 'left' else 'right'
         }
     }
-    if (position %in% c('bottom' , 'top'))
-        position1 = c('bottom' , 'top')[c('bottom' , 'top') != position]
-    if (position %in% c('left' , 'right'))
-        position1 = c('left' , 'right')[c('left' , 'right') != position]
+    if (position %in% c('bottom', 'top'))
+        position1 = c('bottom', 'top')[c('bottom', 'top') != position]
+    if (position %in% c('left', 'right'))
+        position1 = c('left', 'right')[c('left', 'right') != position]
     data1 = list()
     if (missing(data) && type == 'category') {
         data = unique(odata)
@@ -323,12 +263,12 @@ setX1Axis = function(chart, ...) {  # set secondary x axis
 }
 
 axisType = function(data, which = c('x', 'y')) {
-  if (is.numeric(data) || is.null(data)) return('value')
-  if (is.factor(data) || is.character(data)) return('category')
-  if (inherits(data, c('Date', 'POSIXct', 'POSIXlt'))) return('time')
-  message('The structure of the ', which, ' variable:')
-  str(data)
-  stop('Unable to derive the axis type automatically from the ', which, ' variable')
+    if (is.numeric(data) || is.null(data)) return('value')
+    if (is.factor(data) || is.character(data)) return('category')
+    if (inherits(data, c('Date', 'POSIXct', 'POSIXlt'))) return('time')
+    message('The structure of the ', which, ' variable:')
+    str(data)
+    stop('Unable to derive the axis type automatically from the ', which, ' variable')
 }
 
 flipAxis <- function(chart, flip=TRUE, ...){
@@ -346,7 +286,7 @@ flipAxis <- function(chart, flip=TRUE, ...){
         }
     }else{
         if ('xAxis' %in% names(chart$x) &&
-              'yAxis' %in% names(chart$x)){
+            'yAxis' %in% names(chart$x)){
             axes <- exchange(chart$x$xAxis, chart$x$yAxis)
             chart$x$xAxis <- axes[[1]]
             chart$x$yAxis <- axes[[2]]
@@ -356,14 +296,25 @@ flipAxis <- function(chart, flip=TRUE, ...){
 }
 
 
-#' Set \code{grid} of Echarts (Only for Charts Of Cartesian Coordinates System)
+#' Set \code{grid} of Echarts Widgts And Pane
 #'
 #' When an echart object is generated, you can modify it by setting grid using
 #' \code{\link{\%>\%}}.
-#' It is recommended to put \code{setGrid} at the end.
-#' Only applicable for \code{scatter, point, bubble, line, area, bar, histogram}.
+#' \strong{It is recommended to put \code{setGrid} at the end of the piped command.} \cr
+#' when used for 'pane', it is only applicable for \code{scatter, point, bubble,
+#' line, area, bar, histogram}. When used for 'timeline', it only take in params
+#' \code{x, y, x2, y2}. When used for 'legend', 'title', 'dataZoom', 'dataRange',
+#'  'toolbox', 'roamController', it only takes in params \code{x, y}.
 #'
 #' @param chart \code{echarts} object generated by \code{\link{echart}} or \code{\link{echartR}}
+#' @param widget Widget name to set. Could be \code{c('pane', 'timeline', 'legend',
+#' 'title', 'dataZoom', 'dataRange', 'toolbox', 'roamController')}.
+#' \describe{
+#' \item{pane}{the area pane, takes in all the parameters}
+#' \item{timeline}{timeline widget, only use \code{x, y, x2, y2}}
+#' \item{legend, title, dataZoom, dataRange, toolbox, roamController}{other widgets,
+#' only use \code{x, y}}
+#' }
 #' @param x x coordinate of the left upper point of the plot area. Default 80px.
 #' @param y y coordinate of the left upper point of the plot area. Default 60px.
 #' @param x2 x coordinate of the right lower point of the plot area. Default 80px.
@@ -384,31 +335,50 @@ flipAxis <- function(chart, flip=TRUE, ...){
 #' g %>% setGrid(x=40, y=40, x2=70, y2=30, bgColor='gray90')
 #' }
 setGrid <- function(chart, x=80, y=60, x2=80, y2=60, width=NULL, height=NULL,
-                    bgColor=NULL, borderColor=NULL, borderWidth=1, ...){
+                    bgColor=NULL, borderColor=NULL, borderWidth=1,
+                    widget=c('pane', 'timeline', 'legend', 'title', 'dataZoom',
+                             'dataRange', 'toolbox', 'roamController'), ...){
     stopifnot(inherits(chart, 'echarts'))
     hasZ <- 'timeline' %in% names(chart$x)
     types <- getSeriesPart(chart, 'type')
-    if (all(types %in% c('scatter', 'point', 'bubble', 'line', 'bar'))){
-        lstGrid <- list()
-        if (! missing(x)) if (x != 80) lstGrid[['x']] <- x
-        if (! missing(y)) if (y != 60) lstGrid[['y']] <- y
-        if (! missing(x2)) if (x2 != 80) lstGrid[['x2']] <- x2
-        if (! missing(y2)) if (y2 != 60) lstGrid[['y2']] <- y2
-        if (! is.null(width)) lstGrid[['width']] <- width
-        if (! is.null(height)) lstGrid[['height']] <- height
-        if (! missing(borderWidth)) if (borderWidth > 0)
+    widget <- match.arg(widget)
+    if (widget == 'pane') widget <- 'grid'
+    lstGrid <- list()
+    if (! missing(x)) if (ifnull(x, 80) != 80) lstGrid[['x']] <- x
+    if (! missing(y)) if (ifnull(y, 60) != 60) lstGrid[['y']] <- y
+    if (widget %in% c('grid', 'timeline')){
+        if (! missing(x2)) if (ifnull(x2, 80) != 80) lstGrid[['x2']] <- x2
+        if (! missing(y2)) if (ifnull(y2, 60) != 60) lstGrid[['y2']] <- y2
+    }
+    if (widget == 'grid'){
+        if (! missing(width)) if (! is.null(width))
+            lstGrid[['width']] <- width
+        if (! missing(height)) if (! is.null(height))
+            lstGrid[['height']] <- height
+        if (! missing(borderWidth)) if (ifnull(borderWidth, 0) > 0)
             lstGrid[['borderWidth']] <- borderWidth
         if (! missing(borderColor)) if (borderColor != '#ccc')
             lstGrid[['borderColor']] <- borderColor
         if (! missing(bgColor)) if (bgColor != 'rgba(0,0,0,0)')
             lstGrid[['backgroundColor']] <- getColors(bgColor)[1]
-
-        ## wrap up
-        if (hasZ)
-            chart$x$options[[1]][['grid']] <- lstGrid
-        else
-            chart$x[['grid']] <- lstGrid
     }
+    ## wrap up
+    if (hasZ){
+        if (widget == 'timeline'){
+            chart$x$timeline <- mergeList(chart$x$timeline, lstGrid)
+        }else if((widget == 'grid' &&
+                  all(types %in% c('scatter', 'point', 'bubble', 'line', 'bar'))) ||
+                  widget %in% names(chart$x)){
+            chart$x$options[[1]][[widget]] <-
+                mergeList(chart$x$options[[1]][[widget]], lstGrid)
+        }
+    }else{
+        if ((widget == 'grid' &&
+            all(types %in% c('scatter', 'point', 'bubble', 'line', 'bar'))) ||
+            widget %in% names(chart$x))
+                chart$x[[widget]] <- mergeList(chart$x[[widget]], lstGrid)
+    }
+
     return(chart)
 }
 
@@ -432,24 +402,24 @@ setGrid <- function(chart, x=80, y=60, x2=80, y2=60, width=NULL, height=NULL,
     if (!is.null(obj))
         lst <- unlist(mergeList(lstDefault, lst, keep.null=TRUE,
                                 skip.merge.null=TRUE))
-        # x, y , orient
+    # x, y , orient
     else return(rep(NA, 8))
 
     # x, y, x2, y2, width, height
     x <- ifelse(lst['x'] %in% c('left', 'center', 'right'), lst['x'],
-        suppressWarnings(as.numeric(lst['x'])))
+                suppressWarnings(as.numeric(lst['x'])))
     if (is.numeric(x)) x <- if (ifna(x, 0) < 80) 'left' else
         if (ifna(x, 0) < 400) 'center' else 'right'
     y <- ifelse(lst['y'] %in% c('top', 'center', 'bottom'), lst['y'],
-        suppressWarnings(as.numeric(lst['y'])))
+                suppressWarnings(as.numeric(lst['y'])))
     if (is.numeric(y)) y <- if (ifna(y, 0) < 60) 'top' else
         if (ifna(y, 0) < 400) 'center' else 'bottom'
     x2 <- suppressWarnings(as.numeric(lst['x2']))
     y2 <- suppressWarnings(as.numeric(lst['y2']))
     height <- suppressWarnings(as.numeric(lst['height']))
     width <- suppressWarnings(as.numeric(lst['width']))
-    if (length(clockPos(x, y, lst['orient'])) == 0)  pos <- 12
-    else pos <- clockPos(x, y, lst['orient'])
+    pos <- ifelse(length(clockPos(x, y, lst['orient'])) == 0, 12,
+                  clockPos(x, y, lst['orient']))
 
     x <- suppressWarnings(as.numeric(lst['x']))
     y <- suppressWarnings(as.numeric(lst['y']))
@@ -498,11 +468,14 @@ tuneGrid <- function(chart, ...){
     # remove all NA rows
     dfGrid <- dfGrid[!(apply(dfGrid, 1, function(row) all(is.na(row)))),]
 
-     dfGrid <<- dfGrid
+    #dfGrid <<- dfGrid
     # browser()
 
     sumGrid <- dcast(data.table(dfGrid), orient + pos ~ ., fun=sum,
                      value.var=c("x", "y", "x2", "y2", "height", "width"))
+    uniqueGrid <- dfGrid[!duplicated(dfGrid$pos),]
+    sumGrid[,c('x_sum_.', 'y_sum_.', 'x2_sum_.', 'y2_sum_.')] <-
+        uniqueGrid[, c('x', 'y', 'x2', 'y2')]
     sumGrid$x <- ifblank(
         rowSums(sumGrid[,list(x_sum_., width_sum_.)], na.rm=TRUE), NA)
     sumGrid$y <- ifblank(
@@ -512,21 +485,22 @@ tuneGrid <- function(chart, ...){
     sumGrid$y2 <- ifblank(
         rowSums(sumGrid[, list(y2_sum_., height_sum_.)], na.rm=TRUE), NA)
 
-     sumGrid <<- sumGrid
+    #uniqueGrid <<- uniqueGrid
+    #sumGrid <<- sumGrid
 
     lstGrid <- list()
     if (length(sumGrid[pos %in% c(8, 9, 10), x]) > 0)
         if (max(sumGrid[pos %in% c(8, 9, 10), x]) > 80)
-            lstGrid$x <- max(sumGrid[pos %in% c(8, 9, 10), x]) + 20
+            lstGrid$x <- max(ifblank(sumGrid[pos == 9, x], 60)) + 20
     if (length(sumGrid[pos %in% c(11, 12, 1), y]) > 0)
         if (max(sumGrid[pos %in% c(11, 12, 1), y]) > 60)
-            lstGrid$y <- max(sumGrid[pos %in% c(11, 12, 1), y]) + 20
+            lstGrid$y <- max(ifblank(sumGrid[pos == 12, y], 40)) + 20
     if (length(sumGrid[pos %in% c(2, 3, 4), x2]) > 0)
         if (max(sumGrid[pos %in% c(2, 3, 4), x2]) > 80)
-            lstGrid$x2 <- max(sumGrid[pos %in% c(2, 3, 4), x2]) + 20
+            lstGrid$x2 <- max(ifblank(sumGrid[pos == 3, x2], 60)) + 20
     if (length(sumGrid[pos %in% c(5, 6, 7), y2]) > 0)
         if (max(sumGrid[pos %in% c(5, 6, 7), y2]) > 60)
-            lstGrid$y2 <- max(sumGrid[pos %in% c(5, 6, 7), y2]) + 20
+            lstGrid$y2 <- max(ifblank(sumGrid[pos == 6, y2], 40)) + 20
 
     ## tune grid if there are duplicated pos
     if (any(duplicated(dfGrid$pos))){
@@ -536,76 +510,53 @@ tuneGrid <- function(chart, ...){
             dfDupGrid <- dfGrid[dfGrid$pos == i,]
             len <- nrow(dfDupGrid)
             widgets <- row.names(dfDupGrid)[2:len]
-            widgetsNotTL <-widgets[!widgets %in% 'timeline']
-            if (i %in% c(11,12,1)){
-                dfDupGrid$cumHeight <- cumsum(dfDupGrid$height)
-                cumHeight <- rowSums(dfDupGrid[1:(len-1), c('y', "cumHeight")],
-                                     na.rm=TRUE)
-                names(cumHeight) <- widgets
-                if (hasZ){
-                    for (j in widgets){
-                        if (j == 'timeline') chart$x$timeline[[j]]$y =
-                                unname(cumHeight[j])
-                        else chart$x$options[[1]][[j]]$y = unname(cumHeight[j])
-                    }
-                }else{
-                    for (j in widgets) chart$x[[j]]$y = unname(cumHeight[j])
-                }
-            }else if (i %in% c(2,3,4)){
-                dfDupGrid$cumWidth <- cumsum(dfDupGrid$width)
-                cumWidth <- rowSums(dfDupGrid[1:(len-1), c('x2', "cumWidth")],
-                                     na.rm=TRUE)
-                names(cumWidth) <- widgets
-                if (hasZ){
-                    for (j in widgets){
-                        if (j == 'timeline') chart$x$timeline[[j]]$x2 =
-                                unname(cumWidth[j])
-                        else {
-                            chart$x$options[[1]][[j]]$x2 = unname(cumWidth[j])
-                            chart$x$options[[1]][[j]]$x = dev.size('px')[1] -
-                                chart$x$options[[1]][[j]]$x2
-                        }
-                    }
-                }else{
-                    for (j in widgets) {
-                        chart$x[[j]]$x2 = unname(cumWidth[j])
-                        chart$x[[j]]$x = dev.size('px')[1] - chart$x[[j]]$x2
-                    }
-                }
-            }else if (i %in% c(5,6,7)){
-                dfDupGrid$cumHeight <- cumsum(dfDupGrid$height)
-                cumHeight <- rowSums(dfDupGrid[1:(len-1), c('y2', "cumHeight")],
-                                     na.rm=TRUE)
-                names(cumHeight) <- widgets
-                if (hasZ){
-                    for (j in widgets){
-                        if (j == 'timeline') chart$x$timeline[[j]]$y2 =
-                                unname(cumHeight[j])
-                        else {
-                            chart$x$options[[1]][[j]]$y2 = unname(cumHeight[j])
-                            chart$x$options[[1]][[j]]$y = dev.size('px')[2] -
-                                chart$x$options[[1]][[j]]$y2
-                        }
-                    }
-                }else{
-                    for (j in widgets) {
-                        chart$x[[j]]$y2 = unname(cumHeight[j])
-                        chart$x[[j]]$y = dev.size('px')[2] - chart$x[[j]]$y2
+            widgetsNotTL <- widgets[!widgets %in% 'timeline']
+            dfDupGrid$cumHeight <- cumsum(dfDupGrid$height)
+            dfDupGrid$cumWidth <- cumsum(dfDupGrid$width)
+            sizeParam = ifelse(i %in% c(1, 5, 6, 7, 11, 12), 'height', 'width')
+
+            if (i %in% c(11, 12, 1)){
+                cumSize <- ifna(dfDupGrid[1, 'y'],0) +
+                    dfDupGrid[1: (len - 1), c("cumHeight")]
+                w = 'y'
+                w2 = 'y2'
+            }else if (i %in% c(2, 3, 4)){
+                cumSize <- ifna(dfDupGrid[1, 'x2'],0) +
+                    dfDupGrid[1: (len - 1), c("cumWidth")]
+                w = 'x2'
+                w2 = 'x'
+            }else if (i %in% c(5, 6, 7)){
+                cumSize <- ifna(dfDupGrid[1, 'y2'],0) +
+                    dfDupGrid[1: (len - 1), c("cumHeight")]
+                w = 'y2'
+                w2 = 'y'
+            }else if (i %in% c(8, 9, 10)){
+                cumSize <- ifna(dfDupGrid[1, 'x'],0) +
+                    dfDupGrid[1: (len - 1), c("cumWidth")]
+                w = 'x'
+                w2 = 'x2'
+            }
+
+            names(cumSize) <- widgets
+
+            if (hasZ){
+                for (j in widgets){
+                    if (j == 'timeline') chart$x[[j]][[w]] = unname(cumSize[j])
+                    else {
+                        chart$x$options[[1]][[j]][[w]] = unname(cumSize[j])
+                        if (w %in% c('x2', 'y2'))
+                            chart$x$options[[1]][[j]][[w2]] =
+                                dev.size('px')[ifelse(w == 'x2', 1, 2)] - 10 -
+                                dfGrid[j, sizeParam] - chart$x$options[[1]][[j]][[w]]
                     }
                 }
-            }else if (i %in% c(8,9,10)){
-                dfDupGrid$cumWidth <- cumsum(dfDupGrid$width)
-                cumWidth <- rowSums(dfDupGrid[1:(len-1), c('x', "cumWidth")],
-                                    na.rm=TRUE)
-                names(cumWidth) <- widgets
-                if (hasZ){
-                    for (j in widgets){
-                        if (j == 'timeline') chart$x$timeline[[j]]$x =
-                                unname(cumWidth[j])
-                        else chart$x$options[[1]][[j]]$x = unname(cumWidth[j])
-                    }
-                }else{
-                    for (j in widgets) chart$x[[j]]$x = unname(cumWidth[j])
+            }else{
+                for (j in widgets) {
+                    chart$x[[j]][[w]] = unname(cumSize[j])
+                    if (w %in% c('x2', 'y2'))
+                        chart$x[[j]][[w2]] =
+                            dev.size('px')[ifelse(w == 'x2', 1, 2)] - 10 -
+                            dfGrid[j, sizeParam] - chart$x[[j]][[w]]
                 }
             }
         }
@@ -621,8 +572,8 @@ tuneGrid <- function(chart, ...){
             else chart$x$dataZoom$y <- ifnull(lstGrid$y, 60)
         }
     if ('timeline' %in% row.names(dfGrid)){
-       chart$x$timeline$x <- ifnull(lstGrid$x, 80)
-       chart$x$timeline$x2 <- ifnull(lstGrid$x2, 80)
+        chart$x$timeline$x <- ifnull(lstGrid$x, 80)
+        chart$x$timeline$x2 <- ifnull(lstGrid$x2, 80)
     }
 
     ## wrap up
@@ -638,8 +589,7 @@ tuneGrid <- function(chart, ...){
 
 makeTitle <- function(title=NULL, subtitle=NULL, link=NULL, sublink=NULL,
                       pos=6, bgColor=NULL, borderColor=NULL,
-                      borderWidth=NULL, textStyle=NULL, subtextStyle=NULL,
-                      ...){
+                      borderWidth=NULL, textStyle=NULL, subtextStyle=NULL, ...){
     # Work function for setTitle
     title <- ifnull(title, "")
     subtitle <- ifnull(subtitle, "")
@@ -652,13 +602,16 @@ makeTitle <- function(title=NULL, subtitle=NULL, link=NULL, sublink=NULL,
         subtitle <- gsub("^\\[(.+)\\]\\((.+)\\)$", "\\1", subtitle)
     }
     lstTitle <- list(text=title, subtext=subtitle)
+
     if (is.numeric(pos[[1]]) && pos[[1]] <= 12){
         lstTitle[c('x', 'y', 'orient')] <- vecPos(pos[[1]])
-    }else if (length(pos)==3 && tolower(pos[[1]]) %in% c('left', 'right', 'center') &&
+    }else if (length(pos)==3 && tolower(pos[[1]]) %in%
+              c('left', 'right', 'center') &&
               tolower(pos[[2]]) %in% c('top', 'center', 'bottom') &&
               tolower(pos[[3]]) %in% c('vertical', 'horizontal')){
         lstTitle[c('x', 'y', 'orient')] <- pos
     }
+
 
     if (!is.null(link)) lstTitle[['link']] <- link
     if (!is.null(sublink)) lstTitle[['sublink']] <- sublink
@@ -842,7 +795,13 @@ setTitle <- function(chart, title=NULL, subtitle=NULL, link=NULL, sublink=NULL,
 
 makeToolbox <- function(toolbox=c(TRUE,'cn'), type='auto',
                         show=c('mark', 'dataZoom', 'dataView', 'magicType',
-                               'restore', 'saveAsImage'), pos=1, ...){
+                               'restore', 'saveAsImage'), pos=1,
+                        bgColor='rgba(0,0,0,0)', borderColor='#ccc', borderWidth=0,
+                        padding=5, itemGap=10, itemSize=16,
+                        color=c("#1e90ff", "#22bb22", "#4b0082", "#d2691e"),
+                        disableColor='#ddd', effectiveColor='red', showTitle=TRUE,
+                        textStyle=NULL,
+...){
     # Work function for setToolbox
 
     if (! is.null(show)) show <- tolower(show)
@@ -859,6 +818,26 @@ makeToolbox <- function(toolbox=c(TRUE,'cn'), type='auto',
                 saveAsImage = list(show = ('saveasimage' %in% show))
             )
         )
+        if (! missing(bgColor)) if (bgColor != 'rgba(0,0,0,0)')
+            lstToolbox$backgroundColor <- bgColor
+        if (! missing(borderColor)) if (borderColor != '#ccc')
+            lstToolbox$borderColor <- borderColor
+        if (! missing(borderWidth)) if (borderWidth > 0)
+            lstToolbox$borderWidth <- borderWidth
+        if (! missing(padding)) if (padding != 5) lstToolbox$padding <- padding
+        if (! missing(itemGap)) if (itemGap != 10)
+            lstToolbox$itemGap <- itemGap
+        if (! missing(itemSize)) if (itemSize != 16) lstToolbox$itemSize <- itemSize
+        if (! missing(color)) if (!identical(color, c("#1e90ff", "#22bb22", "#4b0082", "#d2691e")))
+            lstToolbox$color <- color
+        if (! missing(disableColor)) if (disableColor != '#ccc')
+            lstToolbox$disableColor <- disableColor
+        if (! missing(effectiveColor)) if (effectiveColor != 'red')
+            lstToolbox$effectiveColor <- effectiveColor
+        if (! missing(shwoTitle)) if (! showTitle) lstToolbox$showTitle <- showTitle
+        if (! missing(textStyle)) if (is.null(textStyle))
+            lstToolbox$textStyle <- textStyle
+
         if (tolower(toolbox[2]) != 'cn'){  # Enlish tooltips of the controls
             lstToolbox[['feature']][['mark']][['title']] = list(
                 mark="Apply Auxiliary Conductor",
@@ -868,12 +847,17 @@ makeToolbox <- function(toolbox=c(TRUE,'cn'), type='auto',
                 dataZoom="Data Zoom",
                 dataZoomReset="Reset Data Zoom")
             lstToolbox[['feature']][['dataView']][['title']] = "Data View"
+            lstToolbox[['feature']][['dataView']][['lang']] <-
+                c('Data View', 'Close', 'Refresh')
             lstToolbox[['feature']][['restore']][['title']] = "Restore"
             lstToolbox[['feature']][['saveAsImage']][['title']] = "Save As Image"
+            lstToolbox[['feature']][['saveAsImage']][['lang']] <- 'Click to Save'
         }
+
         if (is.numeric(pos[[1]]) && pos[[1]] <= 12){
             lstToolbox[c('x', 'y', 'orient')] <- vecPos(pos[[1]])
-        }else if (length(pos)==3 && tolower(pos[[1]]) %in% c('left', 'right', 'center') &&
+        }else if (length(pos)==3 && tolower(pos[[1]]) %in%
+                  c('left', 'right', 'center') &&
                   tolower(pos[[2]]) %in% c('top', 'center', 'bottom') &&
                   tolower(pos[[3]]) %in% c('vertical', 'horizontal')){
             lstToolbox[c('x', 'y', 'orient')] <- pos
@@ -917,13 +901,29 @@ makeToolbox <- function(toolbox=c(TRUE,'cn'), type='auto',
 #'
 #' When an echart object is generated, you can modify it by setting toolbox using
 #' \code{\link{\%>\%}}.
+#'
 #' @param chart \code{echarts} object generated by \code{\link{echart}} or \code{\link{echartR}}
 #' @param show logical. Show the toolbox if TRUE.
 #' @param language 'cn' or 'en', the language of the toolbox tooltips.
 #' @param controls which widgets to show. Default \code{'mark', 'dataZoom', 'dataView', 'magicType',
 #' 'restore', 'saveAsImage'}.
 #' @param pos the clock-position of toolbox, refer to \code{\link{vecPos}}. Or you can
-#' define a vector \code{c(x, y, orient)} yourself.
+#' define a vector \code{c(x, y, orient)} yourself.#'
+#' @param bgColor background color, default transparent ('rgba(0,0,0,0)').
+#' @param borderColor border color, default '#ccc'.
+#' @param borderWidth border width, default 0px (not shown).
+#' @param padding Padding of the toolbox. Default 5px. Could also be a list assigning
+#' padding of top, right, bottom and left.
+#' @param itemGap Gap between the items. Default 10px.
+#' @param itemSize Size of the items. Default 16px.
+#' @param color Colors of the toolbox widgets (applied in loops). Default
+#' c("#1e90ff", "#22bb22", "#4b0082", "#d2691e").
+#' @param disableColor Color for disabled widgets. Default '#ddd'.
+#' @param effectiveColor Color for widgets be triggered. Default 'red'.
+#' @param showTitle Logical, if widgets title are shown. Default TRUE.
+#' @param textStyle A list of the text style of the widgets. Default \code{
+#' list(fontFamily=c('Arial, Verdana, sans-serif'), fontSize=12, fontStyle='normal',
+#' fontWeight='normal')}
 #' @param ... elipsis
 #'
 #' @return A modified echart object
@@ -937,17 +937,27 @@ makeToolbox <- function(toolbox=c(TRUE,'cn'), type='auto',
 #' }
 setToolbox <- function(chart, show=TRUE, language='cn',
                        controls=c('mark', 'dataZoom', 'dataView', 'magicType',
-                                  'restore', 'saveAsImage'), pos=1, ...){
+                                  'restore', 'saveAsImage'), pos=1,
+                       bgColor='rgba(0,0,0,0)', borderColor='#ccc', borderWidth=0,
+                       padding=5, itemGap=10, itemSize=16,
+                       color=c("#1e90ff", "#22bb22", "#4b0082", "#d2691e"),
+                       disableColor='#ddd', effectiveColor='red', showTitle=TRUE,
+                       textStyle=NULL,
+...){
     stopifnot(inherits(chart, 'echarts'))
     hasZ <- 'timeline' %in% names(chart$x)
     if (hasZ){
         type <- chart$x$options[[1]]$series[[1]]$type
-        chart$x$options[[1]]$toolbox <- makeToolbox(toolbox=c(show, language),
-                                                    type, controls, pos)
+        chart$x$options[[1]]$toolbox <- makeToolbox(
+            toolbox=c(show, language), type, controls, pos, bgColor,
+            borderColor, borderWidth, padding, itemGap, itemSize, color,
+            disableColor, effectiveColor, showTitle, textStyle)
     }else{
         type <- chart$x$series[[1]]$type
-        chart$x$toolbox <- makeToolbox(toolbox=c(show, language),
-                                       type, controls, pos)
+        chart$x$toolbox <- makeToolbox(
+            toolbox=c(show, language), type, controls, pos, bgColor,
+            borderColor, borderWidth, padding, itemGap, itemSize, color,
+            disableColor, effectiveColor, showTitle, textStyle)
     }
     return(chart %>% tuneGrid())
 }
@@ -1112,7 +1122,7 @@ getColFromPal <- function(palname=NULL, n=6){
                             'tableaucolorblind', 'trafficlight')){
                     palname <- tableau[tableau$nick==palname,"pal"]
                     colObj <- try(eval(parse(text=paste0("tableau_color_pal(palette='",
-                                                     palname,"')(20)"))), TRUE)
+                                                         palname,"')(20)"))), TRUE)
                 }else if (palname %in%
                           c('solarized', 'solarized_red', 'solarized_yellow',
                             'solarized_orange', 'solarized_magenta', 'solarized_violet',
@@ -1197,13 +1207,32 @@ getColors <- function(palette, ...){
     }
 }
 
-makeDataZoom <- function(show=FALSE, pos=6, range=NULL, width = 30,
+makeDataZoom <- function(show=FALSE, pos=6, range=NULL, width=30,
                          fill='rgba(144,197,237,0.2)',
-                         handle='rgba(70,130,180,0.8)', ...){
+                         handle='rgba(70,130,180,0.8)',
+                         bgColor = 'rgba(0,0,0,0)',
+                         dataBgColor = '#eee', showDetail=TRUE, realtime=FALSE,
+                         zoomLock=FALSE,
+...){
     # Work function for setDataZoom
     if (is.numeric(pos[1])) pos <- vecPos(pos)
     if (!is.null(show)) {
-        lstdataZoom <- list(show=show, fillerColor=fill, handleColor=handle)
+        lstdataZoom <- list(show=show)
+        if (! missing(fill)) if (fill != 'rgba(144,197,237,0.2)')
+            lstdataZoom$fillerColor <- fill
+        if (! missing(handle)) if (handle != 'rgba(70,130,180,0.8)')
+            lstdataZoom$handleColor <- handle
+        if (! missing(bgColor)) if (bgColor != 'rgba(0,0,0,0)')
+            lstdataZoom$backgroundColor <- bgColor
+        if (! missing(dataBgColor)) if (dataBgColor != '#eee')
+            lstdataZoom$dataBackgroundColor <- dataBgColor
+        if (! missing(showDetail)) if (!showDetail)
+            lstdataZoom$showDetail <- showDetail
+        if (! missing(realtime)) if (realtime)
+            lstdataZoom$realtime <- realtime
+        if (! missing(zoomLock)) if (zoomLock)
+            lstdataZoom$zoomLock <- zoomLock
+
         if (pos[[3]] == 'vertical'){
             lstdataZoom[['y']] <- 60
             if (pos[[1]]=='left') lstdataZoom[['x']] <- 0
@@ -1211,13 +1240,10 @@ makeDataZoom <- function(show=FALSE, pos=6, range=NULL, width = 30,
         }else{
             if (! (pos[[1]] == 'center' && pos[[2]] == 'bottom')){
                 lstdataZoom[['x']] <- 80
-                if (pos[[2]]=='top') lstdataZoom[['y']] <- 50
+                if (pos[[2]]=='top') lstdataZoom[['y']] <- 0
             }
         }
-        # if (pos.adjust != 0) lstdataZoom[['y']] <- dev.size('px')[2] - pos.adjust
 
-        # lstdataZoom[['x']] <- pos[[1]]
-        # lstdataZoom[['y']] <- pos[[2]]
         lstdataZoom[['orient']] <- pos[[3]]
         if (lstdataZoom$orient == 'horizontal') lstdataZoom[['height']] <- width
         if (lstdataZoom$orient == 'vertical') lstdataZoom[['width']] <- width
@@ -1249,13 +1275,17 @@ makeDataZoom <- function(show=FALSE, pos=6, range=NULL, width = 30,
 #' define a vector \code{c(x, y, orient)} yourself.
 #' @param range A vector of \code{c(min, max)}. Cannot be out of the frame c(0, 100)
 #' @param width The width of the dataZoom bar. Default 20px.
-#' @param pos.adjust Pixel value of the vertical position adjustment from the page edge.
 #' @param fill fillerColor of the dataZoom bar, in character \code{'rgba(red, green,
 #' blue, alpha)'} format. Default 'rgba(144,197,237,0.2)' ("#90C5ED33").
 #' @param handle handleColor of the dataZoom bar, in character \code{'rgba(red, green,
 #' blue, alpha)'} format. Default 'rgba(70,130,180,0.8)' ("#4682B4CC").
+#' @param bgColor background color. Default transparent ('rgba(0,0,0,0)')
+#' @param dataBgColor background color of the data thumbnail (1st series). Default
+#' '#eee'.
+#' @param showDetail Logical, if show the details when zooming. Defaul TRUE.
+#' @param realtime Logical, if realtime display the changes when zooming. Default FALSE.
+#' @param zoomLock Logical, if the zoom range is locked. Deafult FALSE.
 #' @param ... Elipsis
-#'
 #' @return A modified echart object
 #' @export
 #'
@@ -1270,19 +1300,24 @@ makeDataZoom <- function(show=FALSE, pos=6, range=NULL, width = 30,
 #' g1 %>% setDataZoom(fill=rgba(c(col2rgb('lightgreen'), 0.2)),
 #'                   handle=rgba(c(col2rgb('darkgreen'), 0.5)))
 #' }
-setDataZoom <- function(chart, show=TRUE, pos=6, range=NULL, width=20,
+setDataZoom <- function(chart, show=TRUE, pos=6, range=NULL, width=30,
                         fill='rgba(144,197,237,0.2)',
-                        handle='rgba(70,130,180,0.8)', ...){
+                        handle='rgba(70,130,180,0.8)', bgColor = 'rgba(0,0,0,0)',
+                        dataBgColor = '#eee', showDetail=TRUE, realtime=FALSE,
+                        zoomLock=FALSE, ...){
     stopifnot(inherits(chart, 'echarts'))
     hasZ <- 'timeline' %in% names(chart$x)
     if (hasZ){
         chart$x$options[[1]][['dataZoom']] <- makeDataZoom(
-            show=show, pos=pos, range=range, fill=fill,
-            handle=handle)
+            show=show, pos=pos, range=range, fill=fill, handle=handle,
+            backgroundColor=bgColor, dataBackgroundColor=dataBgColor,
+            showDetail=showDetail, realtime=realtime, zoomLock=zoomLock
+        )
     }else{
         chart$x[['dataZoom']] <- makeDataZoom(
-            show=show, pos=pos, range=range, fill=fill,
-            handle=handle)
+            show=show, pos=pos, range=range, fill=fill, handle=handle,
+            backgroundColor=bgColor, dataBackgroundColor=dataBgColor,
+            showDetail=showDetail, realtime=realtime, zoomLock=zoomLock)
     }
     return(chart %>% tuneGrid())
 }
@@ -1292,7 +1327,8 @@ makeDataRange <- function(show=FALSE, pos=8, min=NULL, max=NULL, splitNumber=5,
                           borderColor='#ccc', borderWidth=0,
                           selectedMode=list(TRUE, 'single', 'multiple'),
                           color=c("#1e90ff", "#f0ffff"),
-                          splitList=NULL, initialRange=NULL, ...){
+                          splitList=NULL, initialRange=NULL,
+...){
     # Work function for setDataRange
     ## color must be color vector
     ## splitList must be list(list(start=m, end=n, label=x, color=hex), ...)
@@ -1304,10 +1340,9 @@ makeDataRange <- function(show=FALSE, pos=8, min=NULL, max=NULL, splitNumber=5,
             lstdataRange <- NULL
         }else{
             lstdataRange <- list(
-                show=show, calculable=ifelse(as.numeric(splitNumber[1])==0 ||
-                                                 is.null(splitNumber),
-                                             calculable, FALSE),
-                color=color, min=min, max=max,
+                show=show, calculable=ifelse(
+                    as.numeric(splitNumber[1])==0 || is.null(splitNumber),
+                    calculable, FALSE),
                 itemWidth=6, selectedMode=selectedMode[[1]]
             )
 
@@ -1320,16 +1355,22 @@ makeDataRange <- function(show=FALSE, pos=8, min=NULL, max=NULL, splitNumber=5,
                 lstdataRange[c('x', 'y', 'orient')] <- pos
             }
 
-            if (borderColor != '#ccc') lstdataRange[['borderColor']] <- borderColor
-            if (borderWidth > 0) lstdataRange[['borderWidth']] <- borderWidth
+            if (!missing(color)) if (! identical(color, c("#1e90ff", "#f0ffff")))
+                lstdataRange[['color']] <- color
+            if (!missing(borderColor)) if (borderColor != '#ccc')
+                lstdataRange[['borderColor']] <- borderColor
+            if (!missing(borderWidth)) if (borderWidth > 0)
+                lstdataRange[['borderWidth']] <- borderWidth
 
-            if (!is.null(labels)) {
+            if (!missing(labels)) if (!is.null(labels)) {
                 if (length(labels) == 1) lstdataRange[['text']] <- c(labels, "")
                 else lstdataRange[['text']] <- labels[1:2]
             }
-            if (!is.null(min)) lstdataRange[['min']] <- as.numeric(min)
-            if (!is.null(max)) lstdataRange[['max']] <- as.numeric(max)
-            if (!is.null(splitList)){
+            if (!missing(min)) if (!is.null(min))
+                lstdataRange[['min']] <- as.numeric(min)
+            if (!missing(max)) if (!is.null(max))
+                lstdataRange[['max']] <- as.numeric(max)
+            if (!missing(splitList)) if (!is.null(splitList)){
                 if (is.list(splitList) &&
                     all(names(splitList[[1]]) %in% c('start', 'end', 'label', 'color'))){
                     lstdataRange[['splitList']] <- splitList
@@ -1397,7 +1438,7 @@ setDataRange <- function(
     labels=NULL, calculable=FALSE, borderColor='#ccc', borderWidth=0,
     selectedMode=list(TRUE, 'single', 'multiple'),
     color=c("#1e90ff", "#f0ffff"), splitList=NULL, initialRange=NULL,
-    ...){
+...){
     stopifnot(inherits(chart, 'echarts'))
     hasZ <- 'timeline' %in% names(chart$x)
     if (! is.null(valueRange[1])) {
@@ -1587,7 +1628,7 @@ getSeriesPart <- function(chart, element=c('name', 'type', 'data', 'large'),
 setLegend <- function(
     chart, show=TRUE, pos=11, selected=NULL, itemGap=5, borderColor='#ccc',
     borderWidth=0, textStyle=list(color='auto'), formatter=NULL, overideData=NULL,
-    ...){
+...){
     stopifnot(inherits(chart, 'echarts'))
 
     hasZ <- 'timeline' %in% names(chart$x)
@@ -1599,7 +1640,8 @@ setLegend <- function(
 
     if (is.numeric(pos[[1]]) && pos[[1]] <= 12){
         lstLegend[c('x', 'y', 'orient')] <- vecPos(pos[[1]])
-    }else if (length(pos)==3 && tolower(pos[[1]]) %in% c('left', 'right', 'center') &&
+    }else if (length(pos)==3 && tolower(pos[[1]]) %in%
+              c('left', 'right', 'center') &&
               tolower(pos[[2]]) %in% c('top', 'center', 'bottom') &&
               tolower(pos[[3]]) %in% c('vertical', 'horizontal')){
         lstLegend[c('x', 'y', 'orient')] <- pos
@@ -1926,8 +1968,8 @@ makeTooltip <- function(type, trigger=NULL, formatter=NULL,
                             ifelse(type %in% c('scatter', 'point', 'bubble')
                                    , 'cross', 'none')),
                 crossStyle=list(type='dashed'), lineStyle='solid'
-                ),
-                list(color='#fff')
+            ),
+            list(color='#fff')
             )
         if (keepDefault){
             lstTooltip[c('islandFormatter', 'enterable', 'showDelay', 'hideDelay',
@@ -2148,33 +2190,33 @@ setTooltip <- function(chart, series=NULL, timeslots=NULL, trigger=NULL,
     }
 
     fixedPart <- "makeTooltip(
-        trigger=trigger, islandFormatter=islandFormatter, position=position,
-        enterable=enterable, axisPointer=axisPointer, textStyle=textStyle,
-        showDelay=showDelay, hideDelay=hideDelay,
-        transitionDuration=transitionDuration,
-        bgColor=bgColor, borderColor=borderColor,
-        borderWidth=borderWidth, borderRadius=borderRadius,
-        show=show, formatter=ifnull(formatter, determineFormatter('"
+    trigger=trigger, islandFormatter=islandFormatter, position=position,
+    enterable=enterable, axisPointer=axisPointer, textStyle=textStyle,
+    showDelay=showDelay, hideDelay=hideDelay,
+    transitionDuration=transitionDuration,
+    bgColor=bgColor, borderColor=borderColor,
+    borderWidth=borderWidth, borderRadius=borderRadius,
+    show=show, formatter=ifnull(formatter, determineFormatter('"
     defaultPart <- "makeTooltip(keepDefault=TRUE, type='"
 
     if (identical(setAlongSZ, c(FALSE, FALSE))){  # global set
         lhs <- ifelse(hasZ, "chart$x$options[[1]][['tooltip']]",
                       "chart$x[['tooltip']]")
         rhs <- paste0(fixedPart, chartTypes[[1]], "')), type='",
-                     chartTypes[[1]], "')")
+                      chartTypes[[1]], "')")
 
     }else if (identical(setAlongSZ, c(TRUE, FALSE))){  # set along series
         if (hasZ) lhs <- paste0("chart$x$options[[1]]$series[[",
-                               vecS, "]][['tooltip']]")
+                                vecS, "]][['tooltip']]")
         else lhs <- paste0("chart$x$series[[", vecS, "]][['tooltip']]")
         rhs <- paste0(fixedPart, chartTypes[vecS, 1], "')), type='",
-                     chartTypes[vecS, 1], "')")
+                      chartTypes[vecS, 1], "')")
 
     }else if (identical(setAlongSZ, c(FALSE, TRUE))){  # set along timeline
         if (hasZ) {  # if not hasZ, this senario fails
             lhs <- paste0("chart$x$options[[", vecZ, "]][['tooltip']]")
             rhs <- paste0(fixedPart, chartTypes[1, vecZ], "')), type='",
-                         chartTypes[1, vecZ], "')")
+                          chartTypes[1, vecZ], "')")
             # the following item to vecZ be reset to default
             vecZ1 <- vecZ + 1
             if (any(vecZ1 > length(chart$x$timeline$data))){
@@ -2197,18 +2239,18 @@ setTooltip <- function(chart, series=NULL, timeslots=NULL, trigger=NULL,
         vecZS1 <- as.matrix(expand.grid(vecZ1, vecS))
         if (hasZ) {
             lhs <- paste0("chart$x$options[[", vecZS[,1], "]]$series[[",
-                                vecZS[,2], "]][['tooltip']]")
+                          vecZS[,2], "]][['tooltip']]")
             lhs1 <- paste0("chart$x$options[[", vecZS1[,1], "]]$series[[",
-                          vecZS1[,2], "]][['tooltip']]")
+                           vecZS1[,2], "]][['tooltip']]")
         }else{
             lhs <- paste0("chart$x[[", vecZS[,1], "]]$series[[", vecZS[,2],
-                           "]][['tooltip']]")
-            lhs1 <- paste0("chart$x[[", vecZS1[,1], "]]$series[[", vecZS1[,2],
                           "]][['tooltip']]")
+            lhs1 <- paste0("chart$x[[", vecZS1[,1], "]]$series[[", vecZS1[,2],
+                           "]][['tooltip']]")
         }
 
         rhs <- paste0(fixedPart, chartTypes[vecZS], "')), type='",
-                     chartTypes[vecZS], "')")
+                      chartTypes[vecZS], "')")
         rhs1 <- paste0(defaultPart, chartTypes[vecZS1], "')")
 
         lhs <- c(lhs, lhs1)
@@ -2354,10 +2396,10 @@ setTimeline <- function(chart, show=TRUE, type=c('time', 'number'), realtime=TRU
     }
 
     defaultLabel <- list(show=TRUE, interval="auto", rotate=0,
-        formatter=NULL, textStyle=list(color="#333"))
+                         formatter=NULL, textStyle=list(color="#333"))
     if (! identical(ifnull(label, defaultLabel), defaultLabel)){
         validLabelFeature <- c('show', 'interval', 'rotate', 'formatter',
-                                   'textStyle')
+                               'textStyle')
         if (! all(names(label) %in% validLabelFeature))
             stop(paste("Only supports label features as below:\n",
                        validLabelFeature))
@@ -2785,9 +2827,70 @@ addMarkPoint <- function(chart, ...){
             for (i in 1:nrow(sermarkPoint)){
                 lstSeries[[sermarkPoint[i,2]]][['markPoint']][['symbolSize']] <-
                     JS('function (value) {
-                           return 10+(value-',min(markPoint[,3]),')*',
+                       return 10+(value-',min(markPoint[,3]),')*',
                        sizeFold,'}')
             }
-        }
     }
+    }
+}
+
+#---------------------Legacy eAxis functions----------------------------
+eAxis = function(
+    # Create an axis for a chart
+    #
+    # Add an axis to a chart.
+    #
+    # This function modified a few default options for the axis component in
+    # ECharts: 1) \code{scale = TRUE} (was \code{FALSE} by default in ECharts); 2)
+    # \code{axisLine$onZero = FALSE} (was \code{TRUE} in ECharts).
+    # @rdname axis
+    chart, which = c('x', 'y'),
+    type = c('value', 'category', 'time', 'log'), show = TRUE,
+    position = c('bottom', 'top', 'left', 'right'),
+    name = '', nameLocation = c('end', 'start'), nameTextStyle = emptyList(),
+    boundaryGap = c(0, 0), min = NULL, max = NULL, scale = TRUE, splitNumber = NULL,
+    axisLine = list(show = TRUE, onZero = FALSE), axisTick = list(show = FALSE),
+    axisLabel = list(show = TRUE), splitLine = list(show = TRUE),
+    splitArea = list(show = FALSE), data = list()
+) {
+    which = match.arg(which)
+    odata = getMeta(chart)[[which]]  # original data along the axis
+    if (missing(type)) type = axisType(odata, which)
+    if (missing(position)) position = if (which == 'x') 'bottom' else 'left'
+    if (missing(data) && type == 'category') {
+        data = I(levels(as.factor(odata)))
+    }
+
+    x = chart$x
+    i = paste0(which, 'Axis')
+    o = list(
+        type = match.arg(type), show = show, position = match.arg(position),
+        name = name, nameLocation = match.arg(nameLocation), nameTextStyle = nameTextStyle,
+        boundaryGap = boundaryGap, min = min, max = max, scale = scale,
+        splitNumber = splitNumber, axisLine = axisLine, axisTick = axisTick,
+        axisLabel = axisLabel, splitLine = splitLine, splitArea = splitArea, data = data
+    )
+    if (length(x[[i]])) {
+        # only merge the arguments that are not missing, e.g. eAxis(min = 0) will
+        # only override 'min' but will not override the 'name' attribute
+        a = intersect(names(as.list(match.call()[-1])), names(o))  #;browser()
+        x[[i]] = mergeList(x[[i]], o[a])
+    } else {
+        x[[i]] = mergeList(x[[i]], o)
+    }
+    chart$x = x
+
+    return(chart)
+}
+
+
+eXAxis = function(chart, ...) {
+    # @rdname axis
+    eAxis(chart, which = 'x', ...)
+}
+
+
+eYAxis = function(chart, ...) {
+    # @rdname axis
+    eAxis(chart, which = 'y', ...)
 }
