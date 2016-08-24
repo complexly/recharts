@@ -328,6 +328,7 @@ flipAxis <- function(chart, flip=TRUE, ...){
 #'
 #' @return A modified echarts object
 #' @export
+#' @seealso \code{\link{relocWidget}}
 #' @references \url{http://echarts.baidu.com/echarts2/doc/option.html#title~grid}
 #' @examples
 #' \dontrun{
@@ -368,7 +369,7 @@ setGrid <- function(chart, x=80, y=60, x2=80, y2=60, width=NULL, height=NULL,
             chart$x$timeline <- mergeList(chart$x$timeline, lstGrid)
         }else if((widget == 'grid' &&
                   all(types %in% c('scatter', 'point', 'bubble', 'line', 'bar'))) ||
-                  widget %in% names(chart$x)){
+                  widget %in% names(chart$x$options[[1]])){
             chart$x$options[[1]][[widget]] <-
                 mergeList(chart$x$options[[1]][[widget]], lstGrid)
         }
@@ -384,45 +385,85 @@ setGrid <- function(chart, x=80, y=60, x2=80, y2=60, width=NULL, height=NULL,
 
 #' @export
 #' @rdname setGrid
-tunePosTitle <- function(chart, x, y, ...){
+relocTitle <- function(chart, x=NULL, y=NULL, ...){
     setGrid(chart, x=x, y=y, widget='title', ...)
 }
 
 #' @export
 #' @rdname setGrid
-tunePosLegend <- function(chart, x, y, ...){
+relocLegend <- function(chart, x=NULL, y=NULL, ...){
     setGrid(chart, x=x, y=y, widget='legend', ...)
 }
 
 #' @export
 #' @rdname setGrid
-tunePosDataZoom <- function(chart, x, y, ...){
+relocDataZoom <- function(chart, x=NULL, y=NULL, ...){
     setGrid(chart, x=x, y=y, widget='dataZoom', ...)
 }
 
 #' @export
 #' @rdname setGrid
-tunePosDataRange <- function(chart, x, y, ...){
+relocDataRange <- function(chart, x=NULL, y=NULL, ...){
     setGrid(chart, x=x, y=y, widget='dataRange', ...)
 }
 
 #' @export
 #' @rdname setGrid
-tunePosTimeline <- function(chart, x, y, x2, y2, ...){
+relocTimeline <- function(chart, x=NULL, y=NULL, x2=NULL, y2=NULL, ...){
     setGrid(chart, x=x, y=y, x2=x2, y2=y2, widget='timeline', ...)
 }
 
 #' @export
 #' @rdname setGrid
-tunePosToolbox <- function(chart, x, y, ...){
+relocToolbox <- function(chart, x=NULL, y=NULL, ...){
     setGrid(chart, x=x, y=y, widget='toolbox', ...)
 }
 
 #' @export
 #' @rdname setGrid
-tunePosRoam <- function(chart, x, y, ...){
+relocRoam <- function(chart, x=NULL, y=NULL, ...){
     setGrid(chart, x=x, y=y, widget='roamController', ...)
 }
+
+#' Re-locate Echarts Widgets (Position of Upper-left/Lower-right Point)
+#'
+#' @param chart Echarts object
+#' @param widgets Vector or list, could be \code{'title', 'timeline', 'legend', 'toolbox',
+#' 'dataRange', 'dataZoom', 'roamController'}
+#' @param x Vector, x-coordinates of the widgets' upper-left point
+#' @param y Vector, y-coordinates of the widgets' upper-left point
+#' @param x2 Vector, x-coordinates of the widgets' lower-right point
+#' @param y2 Vector, y-coordinates of the widgets' lower-right point
+#' @note If \code{x, y, x2, y2} are shorter in length than the list \code{widgets},
+#' the last element of \code{x, y, x2, y2} will be applied to cover the rest.
+#' If \code{x, y, x2, y2} are longer in length than the list \code{widgets},
+#' the redundent elements will be dropped.
+#' @return A modified Echarts object
+#' @export
+#' @seealso \code{\link{setGrid}}
+#' @examples
+#' \dontrun{
+#' g <- echartR(iris, Sepal.Width, Petal.Width) %>% setDataZoom()
+#' g %>% relocWidgets('dataZoom', x=150)
+#' }
+relocWidget <- function(chart, widgets, x=NULL, y=NULL, x2=NULL, y2=NULL){
+    stopifnot(inherits(chart, 'echarts'))
+    stopifnot(all(widgets %in% c('title', 'timeline', 'legend', 'toolbox',
+                                 'dataRange', 'dataZoom', 'roamController')))
+    if (!missing(x)) if (!is.null(x)) x <- if (length(x) < length(widgets))
+        c(x, rep(x[length(x)], length(widgets) - length(x))) else x[length(widgets)]
+    if (!missing(y)) if (!is.null(y)) y <- if (length(y) < length(widgets))
+        c(y, rep(y[length(y)], length(widgets) - length(y))) else x[length(widgets)]
+    if (!missing(x2)) if (!is.null(x2)) x <- if (length(x2) < length(widgets))
+        c(x2, rep(x2[length(x2)], length(widgets) - length(x2))) else x[length(widgets)]
+    if (!missing(y2)) if (!is.null(y2)) x <- if (length(y2) < length(widgets))
+        c(y2, rep(y2[length(y2)], length(widgets) - length(y2))) else x[length(widgets)]
+    for (i in 1:length(widgets)){
+        chart <- chart %>% setGrid(x[i], y[i], x2[i], y2[i], widget=widgets[i])
+    }
+    return(chart)
+}
+
 
 .getGridParam <- function(chart, control, pos, size, horizontal=TRUE){
     stopifnot(length(pos) == 4)  ## x, y, x2, y2
@@ -449,13 +490,16 @@ tunePosRoam <- function(chart, x, y, ...){
 
     # x, y, x2, y2, width, height
     x <- ifelse(lst['x'] %in% c('left', 'center', 'right'), lst['x'],
-                suppressWarnings(as.numeric(lst['x'])))
+                ifelse(grepl("document\\.getElementById", lst['x']), 'right',
+                       suppressWarnings(as.numeric(lst['x']))))
     if (is.numeric(x)) x <- if (ifna(x, 0) < 80) 'left' else
         if (ifna(x, 0) < 400) 'center' else 'right'
     y <- ifelse(lst['y'] %in% c('top', 'center', 'bottom'), lst['y'],
-                suppressWarnings(as.numeric(lst['y'])))
+                ifelse(grepl("document\\.getElementById", lst['y']), 'bottom',
+                       suppressWarnings(as.numeric(lst['y']))))
     if (is.numeric(y)) y <- if (ifna(y, 0) < 60) 'top' else
         if (ifna(y, 0) < 400) 'center' else 'bottom'
+
     x2 <- suppressWarnings(as.numeric(lst['x2']))
     y2 <- suppressWarnings(as.numeric(lst['y2']))
     height <- suppressWarnings(as.numeric(lst['height']))
@@ -472,6 +516,8 @@ tunePosRoam <- function(chart, x, y, ...){
 
     return(c(pos, x, y, x2, y2, height, width, unname(lst['orient']=='horizontal')))
 }
+
+
 
 #' @export
 #' @importFrom data.table data.table
@@ -510,7 +556,7 @@ tuneGrid <- function(chart, ...){
     # remove all NA rows
     dfGrid <- dfGrid[!(apply(dfGrid, 1, function(row) all(is.na(row)))),]
 
-    #dfGrid <<- dfGrid
+    dfGrid <<- dfGrid
     # browser()
 
     sumGrid <- dcast(data.table(dfGrid), orient + pos ~ ., fun=sum,
@@ -527,22 +573,22 @@ tuneGrid <- function(chart, ...){
     sumGrid$y2 <- ifblank(
         rowSums(sumGrid[, list(y2_sum_., height_sum_.)], na.rm=TRUE), NA)
 
-    #uniqueGrid <<- uniqueGrid
-    #sumGrid <<- sumGrid
+    uniqueGrid <<- uniqueGrid
+    sumGrid <<- sumGrid
 
     lstGrid <- list()
     if (length(sumGrid[pos %in% c(8, 9, 10), x]) > 0)
-        if (max(sumGrid[pos %in% c(8, 9, 10), x]) > 80)
-            lstGrid$x <- max(ifblank(sumGrid[pos == 9, x], 60)) + 20
+        if (max(sumGrid[pos %in% c(8, 9, 10), x]) > 70)
+            lstGrid$x <- max(ifblank(sumGrid[pos == 9, x], 70)) + 20
     if (length(sumGrid[pos %in% c(11, 12, 1), y]) > 0)
-        if (max(sumGrid[pos %in% c(11, 12, 1), y]) > 60)
-            lstGrid$y <- max(ifblank(sumGrid[pos == 12, y], 40)) + 20
+        if (max(sumGrid[pos %in% c(11, 12, 1), y]) > 50)
+            lstGrid$y <- max(ifblank(sumGrid[pos == 12, y], 50)) + 30
     if (length(sumGrid[pos %in% c(2, 3, 4), x2]) > 0)
-        if (max(sumGrid[pos %in% c(2, 3, 4), x2]) > 80)
-            lstGrid$x2 <- max(ifblank(sumGrid[pos == 3, x2], 60)) + 20
+        if (max(sumGrid[pos %in% c(2, 3, 4), x2]) > 70)
+            lstGrid$x2 <- max(ifblank(sumGrid[pos == 3, x2], 70)) + 20
     if (length(sumGrid[pos %in% c(5, 6, 7), y2]) > 0)
-        if (max(sumGrid[pos %in% c(5, 6, 7), y2]) > 60)
-            lstGrid$y2 <- max(ifblank(sumGrid[pos == 6, y2], 40)) + 20
+        if (max(sumGrid[pos %in% c(5, 6, 7), y2]) > 50)
+            lstGrid$y2 <- max(ifblank(sumGrid[pos == 6, y2], 50)) + 30
 
     ## tune grid if there are duplicated pos
     if (any(duplicated(dfGrid$pos))){
@@ -587,18 +633,28 @@ tuneGrid <- function(chart, ...){
                     else {
                         chart$x$options[[1]][[j]][[w]] = unname(cumSize[j])
                         if (w %in% c('x2', 'y2'))
-                            chart$x$options[[1]][[j]][[w2]] =
-                                dev.size('px')[ifelse(w == 'x2', 1, 2)] - 10 -
-                                dfGrid[j, sizeParam] - chart$x$options[[1]][[j]][[w]]
+                        #      chart$x$options[[1]][[j]][[w2]] =
+                        #          dev.size('px')[ifelse(w == 'x2', 1, 2)] - 10 -
+                        #          dfGrid[j, sizeParam] - chart$x$options[[1]][[j]][[w]]
+                            chart$x$options[[1]][[j]][[w2]] = JS(
+                                paste0("document.getElementById('", chart$elementId,
+                                       "').offset", ifelse(w == 'x2', 'Width', "Height"),
+                                       " - ", dfGrid[j, sizeParam] +
+                                           chart$x$options[[1]][[j]][[w]]))
                     }
                 }
             }else{
                 for (j in widgets) {
                     chart$x[[j]][[w]] = unname(cumSize[j])
                     if (w %in% c('x2', 'y2'))
-                        chart$x[[j]][[w2]] =
-                            dev.size('px')[ifelse(w == 'x2', 1, 2)] - 10 -
-                            dfGrid[j, sizeParam] - chart$x[[j]][[w]]
+                        # chart$x[[j]][[w2]] =
+                        #     dev.size('px')[ifelse(w == 'x2', 1, 2)] - 10 -
+                        #     dfGrid[j, sizeParam] - chart$x[[j]][[w]]
+                        chart$x[[j]][[w2]] = JS(
+                            paste0("document.getElementById('", chart$elementId,
+                                   "').offset", ifelse(w == 'x2', 'Width', "Height"),
+                                   " - ", dfGrid[j, sizeParam] +
+                                       chart$x[[j]][[w]]))
                 }
             }
         }
@@ -872,7 +928,7 @@ makeToolbox <- function(toolbox=c(TRUE,'cn'), type='auto',
         if (! missing(itemSize)) if (itemSize != 16) lstToolbox$itemSize <- itemSize
         if (! missing(color)) if (!identical(color, c("#1e90ff", "#22bb22", "#4b0082", "#d2691e")))
             lstToolbox$color <- color
-        if (! missing(disableColor)) if (disableColor != '#ccc')
+        if (! missing(disableColor)) if (disableColor != '#ddd')
             lstToolbox$disableColor <- disableColor
         if (! missing(effectiveColor)) if (effectiveColor != 'red')
             lstToolbox$effectiveColor <- effectiveColor
@@ -1618,8 +1674,20 @@ getSeriesPart <- function(chart, element=c('name', 'type', 'data', 'large'),
         obj <- sapply(seq_len(length(chart$x$options)), function(i) {
             sapply(chart$x$options[[i]]$series, function(lst) lst[[element]])
         })
+        data <- sapply(seq_len(length(chart$x$options)), function(i) {
+            sapply(chart$x$options[[i]]$series, function(lst) lst[['data']])
+        })
+        if (chart$x$options[[1]]$series[[1]]$type %in% c('funnel', 'pie')){
+            if (element == 'name') obj <- unlist(data)[names(unlist(data))=='name']
+            if (element == 'data') obj <- unlist(data)[names(unlist(data))=='value']
+        }
     }else{
         obj <- sapply(chart$x$series, function(lst) lst[[element]])
+        data <- sapply(chart$x$series, function(lst) lst[['data']])
+        if (chart$x$series[[1]]$type %in% c('funnel', 'pie')){
+            if (element == 'name') obj <- unlist(data)[names(unlist(data))=='name']
+            if (element == 'data') obj <- unlist(data)[names(unlist(data))=='value']
+        }
     }
     return(unlist(obj))
 }
@@ -1788,7 +1856,7 @@ setPolar <- function(chart, center=c('50%', '50%'), radius='75%', startAngle=90,
 #' @param bgColor Color name/value of the background. Default is transparent
 #' (\code{'rgba(0,0,0,0)'})
 #' @param renderAsImage Logical. If FALSE, the interactive effects are disabled. Default TRUE.
-#' @param calculable Logical. If TRUE, the chart is re-calculated after drag. Default TRUE.
+#' @param calculable Logical. If TRUE, the chart is re-calculated after drag. Default FALSE.
 #' @param calculableColor The border color of the tooltip during \code{calculable} effect.
 #' Default 'rgba(255,165,0,0.6)'.
 #' @param calculableHolderColor The color of \code{calculableHolder}. Default '#ccc'.
@@ -1831,7 +1899,7 @@ setPolar <- function(chart, center=c('50%', '50%'), radius='75%', startAngle=90,
 #'         animationDuration=10000)
 #' }
 setAes <- function(
-    chart, palette='asis', bgColor=NULL, renderAsImage=FALSE, calculable=TRUE,
+    chart, palette='asis', bgColor=NULL, renderAsImage=FALSE, calculable=FALSE,
     calculableColor=NULL, calculableHolderColor=NULL, animation=TRUE,
     animationEasing=NULL, animationDuration=NULL, width=NULL, height=NULL,
     ...){
@@ -1843,14 +1911,15 @@ setAes <- function(
             return(length(lst$series))
         })
         nSeries <- max(unlist(nSeries))
-        if (palette != 'asis') {
+        if (!identical(palette, 'asis')) {
             lstColor <- as.list(getColors(palette, n=nSeries))
             chart$x$options[[1]][['color']] <- lstColor[1:nSeries]
         }
         lst <- chart$x$options[[1]]
     }else{
-        nSeries <- length(chart$x$series)
-        if (palette != 'asis') {
+        nSeries <- length(getSeriesPart(chart, 'name'))
+        if (nSeries == 0) nSeries <- 1
+        if (!identical(palette, 'asis')) {
             lstColor <- as.list(getColors(palette, n=nSeries))
             chart$x[['color']] <- lstColor[1:nSeries]
         }
@@ -1872,8 +1941,8 @@ setAes <- function(
             contrastColor <- rgb(cColor[1], cColor[2], cColor[3], max=255)
         }
     }
-    if (renderAsImage) lst[['renderAsImage']] <- TRUE
-    if (!calculable) lst[['calculable']] <- FALSE
+    if (renderAsImage) lst[['renderAsImage']] <- renderAsImage
+    if (calculable) lst[['calculable']] <- calculable
     if (!is.null(calculableColor) && calculableColor != 'rgba(255,165,0,0.6)')
         lst[['calculableColor']] <- ifelse(
             grepl("^rgba\\(", calculableColor), calculableColor,
@@ -2060,19 +2129,19 @@ makeTooltip <- function(type, trigger=NULL, formatter=NULL,
 
 determineFormatter <- function(type){
     if (type %in% c('scatter', 'bubble', 'point')){
-        formatter <- JS(tooltipJS('scatter'))
+        formatter <- tooltipJS('scatter')
     }else if (type %in% c('ring','pie')){
-        formatter <- JS(tooltipJS('pie'))
+        formatter <- tooltipJS('pie')
     }else if (type %in% c('chord', 'force')){
         if (length(getSeriesPart(chart, 'name')) == 1){
-            formatter <- JS(tooltipJS('chord_mono'))
+            formatter <- tooltipJS('chord_mono')
         }else{
-            formatter <- JS(tooltipJS('chord_multi'))
+            formatter <- tooltipJS('chord_multi')
         }
     }else if (type == 'k'){
-        formatter <- JS(tooltipJS('k'))
+        formatter <- tooltipJS('k')
     }else if (type == 'histogram'){
-        formatter <- JS(tooltipJS('hist'))
+        formatter <- tooltipJS('hist')
     }else{
         formatter <- NULL
     }
@@ -2239,6 +2308,7 @@ setTooltip <- function(chart, series=NULL, timeslots=NULL, trigger=NULL,
     bgColor=bgColor, borderColor=borderColor,
     borderWidth=borderWidth, borderRadius=borderRadius,
     show=show, formatter=ifnull(formatter, determineFormatter('"
+
     defaultPart <- "makeTooltip(keepDefault=TRUE, type='"
 
     if (identical(setAlongSZ, c(FALSE, FALSE))){  # global set
