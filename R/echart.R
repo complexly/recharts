@@ -86,7 +86,7 @@ eChart = echart
 # from the planet of "Duo1 Qiao1 Yi1 Ge4 Jian4 Hui4 Si3" (will die if having to
 # press one more key, i.e. Shift in this case)
 
-
+#' @importFrom digest sha1
 #' @export
 echartr = function(
     data, x = NULL, y = NULL, series = NULL, weight = NULL, z = NULL,
@@ -244,16 +244,18 @@ echartr = function(
     }
 
     # -------------------output-------------------------------
+    elementId = paste0('echarts-', sha1(
+        paste0(convTimestamp(Sys.time()), Sys.info()[['nodename']],
+               sample(10000000000, 1))))
     chart = htmlwidgets::createWidget(
         'echarts', params, width = NULL, height = NULL, package = 'recharts',
-        dependencies = lapply(c('base', unique(dfType$type)), getDependency)
+        dependencies = lapply(c('base', unique(dfType$type)), getDependency),
+        elementId=elementId
     )
 
     if (hasZ){
         chart <- chart %>% setTimeline(show=TRUE, data=uniZ)
     }
-
-
 
     if (any(dfType$type %in% c('line', 'bar', 'scatter', 'k'))){
         chart %>% setXAxis(name = xlab[[1]]) %>%
