@@ -171,6 +171,7 @@ series_line = function(lst, type, return=NULL, ...) {
 }
 
 series_k <- function(lst, type, return=NULL, ...){
+    # Example:
     # g=echartr(stock, date, c(open, close, low, high), type='k')
 
     data <- cbind(lst$y[,1], lst$x[,1])
@@ -183,11 +184,34 @@ series_k <- function(lst, type, return=NULL, ...){
 }
 
 series_pie <- function(lst, type, return=NULL, ...){
-    # g=echartr(stock, date, c(open, close, low, high), type='k')
+    # Example:
+    # g=echartr(iris, y=Sepal.Width,series=Species,type='pie')
 
-    data <- cbind(lst$y[,1], lst$series[,1])
-    data <- dcast()
-    obj <- list(list(name='Stock', type=type$type[1], data=asEchartData(lst$y[,1:4])))
+    if (is.null(lst$y) || is.null(lst$series))
+        stop("pie charts need y and series!")
+    data <- data.frame(lst$y[,1], lst$series[,1])
+    names(data) <- c(names(lst$y)[1], names(lst$series)[1])
+    data <- dcast(data, paste(names(lst$series)[1], "~."), sum,
+                  value.var=names(lst$y)[1])
+
+    obj <- list(list(name='Proportion', type=type$type[1],
+                     data=apply(data, 1, function(row) {
+                         list(name=unname(row[1]), value=as.numeric(unname(row[2])))
+                     })))
+    if (all(grepl('ring', type$misc))){
+        obj[[1]][['radius']] <- c('60%', '80%')
+        obj[[1]][['itemStyle']] <- list(
+            normal=list(label=list(show=TRUE)),
+            emphasis=list(label=list(show=TRUE, position='center', textStyle=list(
+                fontSize='30',fontWeight='bold'
+            )))
+        )
+    }else if (all(grepl('radius', type$misc))){
+        obj[[1]][['roseType']] <- 'radius'
+    }else if (all(grepl('area', type$misc))){
+        obj[[1]][['roseType']] <- 'area'
+    }
+
     if (is.null(return)){
         return(obj)
     }else{
